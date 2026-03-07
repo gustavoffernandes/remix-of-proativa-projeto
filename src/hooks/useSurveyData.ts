@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections, type Respondent, type Company } from "@/data/mockData";
 
 export interface SurveyResponse {
@@ -28,6 +29,8 @@ const COMPANY_COLORS = [
 ];
 
 export function useSurveyData() {
+  const { userCompanyId, isCompanyUser } = useAuth();
+
   const { data: configs = [], isLoading: loadingConfigs } = useQuery({
     queryKey: ["google-forms-config"],
     queryFn: async () => {
@@ -54,33 +57,36 @@ export function useSurveyData() {
 
   const isLoading = loadingConfigs || loadingResponses;
 
-  const companies: RealCompany[] = configs.map((c, i) => ({
+  // Filter configs and responses by company if user is company_user
+  const filteredConfigs = isCompanyUser && userCompanyId
+    ? configs.filter(c => c.id === userCompanyId)
+    : configs;
+
+  const filteredRawResponses = isCompanyUser && userCompanyId
+    ? rawResponses.filter(r => r.config_id === userCompanyId)
+    : rawResponses;
+
+  const companies: RealCompany[] = filteredConfigs.map((c, i) => ({
     id: c.id,
     name: c.company_name,
     sector: "—",
-    employees: rawResponses.filter(r => r.config_id === c.id).length,
+    employees: filteredRawResponses.filter(r => r.config_id === c.id).length,
     color: COMPANY_COLORS[i % COMPANY_COLORS.length],
   }));
 
-  const respondents: Respondent[] = rawResponses.map(r => {
-    // 1. Criar um objeto limpo para salvar as respostas traduzidas
+  const respondents: Respondent[] = filteredRawResponses.map(r => {
     const formattedAnswers: Record<string, number> = {};
 
     if (r.answers) {
       Object.entries(r.answers).forEach(([columnHeader, cellValue]) => {
-        // 2. Tentar encontrar a pergunta no sistema que bate com o cabeçalho da planilha
-        // Usamos toLowerCase() e includes() para ser flexível caso a planilha tenha "1. Pergunta..."
         const matchedQuestion = questions.find(q => 
           columnHeader.toLowerCase().includes(q.text.toLowerCase()) ||
           q.text.toLowerCase().includes(columnHeader.toLowerCase())
         );
 
         if (matchedQuestion) {
-          // 3. Tentar converter a resposta para um número
-          // Se for "4 - Frequentemente" ou "4", o parseInt extrai o 4.
           let numValue = parseInt(String(cellValue), 10);
 
-          // 4. Se a pessoa respondeu com texto puro (ex: "Nunca"), mapeamos para os números
           if (isNaN(numValue)) {
             const textVal = String(cellValue).toLowerCase();
             if (textVal.includes("nunca")) numValue = 1;
@@ -90,7 +96,6 @@ export function useSurveyData() {
             else if (textVal.includes("sempre")) numValue = 5;
           }
 
-          // 5. Se encontramos um número de 1 a 5, salvamos com o ID interno (ex: "c1" = 4)
           if (numValue >= 1 && numValue <= 5) {
             formattedAnswers[matchedQuestion.id] = numValue;
           }
@@ -105,7 +110,7 @@ export function useSurveyData() {
       sex: (r.sex === "Masculino" || r.sex === "Feminino") ? r.sex : "Prefiro não declarar",
       age: r.age || 0,
       sector: r.sector || "Não informado",
-      answers: formattedAnswers, // Aqui nós usamos as respostas formatadas!
+      answers: formattedAnswers,
       responseTimestamp: r.response_timestamp,
     };
   });
@@ -166,7 +171,6 @@ export function useSurveyData() {
     return sections.filter(s => sectionIds.has(s.id));
   }
 
-  // Detect outlier responses: responses that deviate significantly from sector average
   function getOutlierResponses(companyId: string, threshold: number = 1.5) {
     const pool = getCompanyRespondents(companyId);
     const outliers: { respondent: Respondent; questionId: string; value: number; sectorAvg: number; deviation: number }[] = [];
@@ -208,7 +212,6 @@ export function useSurveyData() {
     return outliers.sort((a, b) => b.deviation - a.deviation);
   }
 
-  // Get sector averages for a company
   function getSectorAverages(companyId: string) {
     const pool = getCompanyRespondents(companyId);
     const sectorSet = [...new Set(pool.map(r => r.sector))].sort();

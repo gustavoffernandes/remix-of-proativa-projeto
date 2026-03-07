@@ -7,15 +7,15 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
-  { path: "/", label: "Visão Geral", icon: LayoutDashboard, adminOnly: false },
-  { path: "/analise", label: "Análise por Pergunta", icon: BarChart3, adminOnly: false },
-  { path: "/empresas", label: "Comparação Empresas", icon: Building2, adminOnly: false },
-  { path: "/demografico", label: "Perfil Demográfico", icon: Users, adminOnly: false },
-  { path: "/heatmap", label: "Heatmap Satisfação", icon: FileText, adminOnly: false },
-  { path: "/relatorios", label: "Relatórios", icon: Download, adminOnly: false },
-  { path: "/plano-acao", label: "Plano de Ação", icon: ClipboardList, adminOnly: false },
-  { path: "/notas", label: "Bloco de Notas", icon: StickyNote, adminOnly: false },
-  { path: "/integracoes", label: "Integrações", icon: Link2, adminOnly: true },
+  { path: "/", label: "Visão Geral", icon: LayoutDashboard, adminOnly: false, hideForCompanyUser: false },
+  { path: "/analise", label: "Análise por Pergunta", icon: BarChart3, adminOnly: false, hideForCompanyUser: false },
+  { path: "/empresas", label: "Comparação Empresas", icon: Building2, adminOnly: false, hideForCompanyUser: true },
+  { path: "/demografico", label: "Perfil Demográfico", icon: Users, adminOnly: false, hideForCompanyUser: false },
+  { path: "/heatmap", label: "Heatmap Satisfação", icon: FileText, adminOnly: false, hideForCompanyUser: false },
+  { path: "/relatorios", label: "Relatórios", icon: Download, adminOnly: false, hideForCompanyUser: false },
+  { path: "/plano-acao", label: "Plano de Ação", icon: ClipboardList, adminOnly: false, hideForCompanyUser: false },
+  { path: "/notas", label: "Bloco de Notas", icon: StickyNote, adminOnly: false, hideForCompanyUser: false },
+  { path: "/integracoes", label: "Integrações", icon: Link2, adminOnly: true, hideForCompanyUser: false },
 ];
 
 const bottomItems = [
@@ -31,9 +31,13 @@ interface SidebarProps {
 
 export function ProativaSidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }: SidebarProps) {
   const location = useLocation();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, isCompanyUser } = useAuth();
 
-  const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
+  const visibleMenuItems = menuItems.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.hideForCompanyUser && isCompanyUser) return false;
+    return true;
+  });
 
   const handleNavClick = () => {
     setMobileOpen(false);

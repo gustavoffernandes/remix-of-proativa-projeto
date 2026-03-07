@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Settings as SettingsIcon, User, Bell, Palette, Shield, Save, UserPlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 type TabId = "perfil" | "usuarios" | "notificacoes" | "aparencia" | "geral";
 
@@ -24,18 +25,37 @@ export default function Settings() {
   const [notifications, setNotifications] = useState({ emailSync: true, emailReport: false, browserNotifications: true });
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [newUserRole, setNewUserRole] = useState<"admin" | "user" | "company_user">("user");
+  const [newUserCompanyId, setNewUserCompanyId] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
+
+  const { data: companiesList = [] } = useQuery({
+    queryKey: ["companies-for-user-creation"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("google_forms_config")
+        .select("id, company_name")
+        .eq("is_active", true)
+        .order("company_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
 
   const handleCreateUser = async () => {
     if (!newUserEmail || !newUserPassword) { toast({ title: "Preencha todos os campos", variant: "destructive" }); return; }
     if (newUserPassword.length < 8) { toast({ title: "Senha deve ter pelo menos 8 caracteres", variant: "destructive" }); return; }
+    if (newUserRole === "company_user" && !newUserCompanyId) { toast({ title: "Selecione uma empresa para o Usuário Empresa", variant: "destructive" }); return; }
     setCreatingUser(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-user", { body: { email: newUserEmail, password: newUserPassword, role: newUserRole } });
+      const body: Record<string, string> = { email: newUserEmail, password: newUserPassword, role: newUserRole };
+      if (newUserRole === "company_user") body.company_id = newUserCompanyId;
+      const { data, error } = await supabase.functions.invoke("create-user", { body });
       if (error) throw error;
-      toast({ title: "Usuário criado!", description: `${newUserEmail} foi adicionado como ${newUserRole}.` });
-      setNewUserEmail(""); setNewUserPassword(""); setNewUserRole("user");
+      const roleLabel = newUserRole === "admin" ? "Administrador" : newUserRole === "company_user" ? "Usuário Empresa" : "Usuário Geral";
+      toast({ title: "Usuário criado!", description: `${newUserEmail} foi adicionado como ${roleLabel}.` });
+      setNewUserEmail(""); setNewUserPassword(""); setNewUserRole("user"); setNewUserCompanyId("");
     } catch (e: any) { toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" }); }
     setCreatingUser(false);
   };
@@ -75,7 +95,28 @@ export default function Settings() {
                 <h3 className="text-lg font-semibold text-card-foreground">Criar Novo Usuário</h3>
                 <div className="space-y-1"><label className="text-sm font-medium text-foreground">E-mail</label><input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="novo@email.com" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" /></div>
                 <div className="space-y-1"><label className="text-sm font-medium text-foreground">Senha</label><input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mínimo 8 caracteres" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" /></div>
-                <div className="space-y-1"><label className="text-sm font-medium text-foreground">Tipo</label><select value={newUserRole} onChange={e => setNewUserRole(e.target.value as "admin" | "user")} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-foreground">Tipo de Usuário</label>
+                  <select value={newUserRole} onChange={e => { setNewUserRole(e.target.value as "admin" | "user" | "company_user"); setNewUserCompanyId(""); }} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                    <option value="user">Usuário Geral (visualiza todas as empresas)</option>
+                    <option value="company_user">Usuário Empresa (restrito a uma empresa)</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {newUserRole === "admin" && "Acesso total: gerencia integrações, usuários e todos os dados."}
+                    {newUserRole === "user" && "Visualiza dados de todas as empresas, sem permissão de administração."}
+                    {newUserRole === "company_user" && "Visualiza apenas os dados da empresa selecionada abaixo."}
+                  </p>
+                </div>
+                {newUserRole === "company_user" && (
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground">Empresa Vinculada</label>
+                    <select value={newUserCompanyId} onChange={e => setNewUserCompanyId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                      <option value="">Selecione uma empresa...</option>
+                      {companiesList.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                    </select>
+                  </div>
+                )}
                 <button onClick={handleCreateUser} disabled={creatingUser} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Criar Usuário</button>
               </div>
             )}

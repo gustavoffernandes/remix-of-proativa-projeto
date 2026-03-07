@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
 import { exportCompanyReport, exportComparisonReport, exportRawData } from "@/lib/exportUtils";
 import { exportCompanyPDF, exportComparisonPDF } from "@/lib/pdfExport";
@@ -28,6 +29,7 @@ function RiskBadge({ value, type }: { value: number; type: "positive" | "negativ
 }
 
 export default function Reports() {
+  const { isCompanyUser } = useAuth();
   const surveyData = useSurveyData();
   const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages } = surveyData;
   const [selectedCompany, setSelectedCompany] = useState<string>("");
@@ -129,9 +131,13 @@ export default function Reports() {
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">
           <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /> Relatório Individual</h3>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
-            <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            {!isCompanyUser ? (
+              <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            ) : (
+              <p className="text-sm font-medium text-foreground">{companies.find(c => c.id === effectiveCompany)?.name}</p>
+            )}
             <div className="flex gap-2 sm:ml-auto">
               <button onClick={() => handleExport("PDF", () => exportCompanyPDF(effectiveCompany, exportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF</button>
               <button onClick={() => handleExport("CSV", () => exportCompanyReport(effectiveCompany, exportData))} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV</button>
@@ -269,21 +275,23 @@ export default function Reports() {
           )}
         </div>
 
-        {/* Relatório Comparativo */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-          <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><GitCompareArrows className="h-4 w-4 text-primary" /> Relatório Comparativo</h3>
-          <div className="flex flex-wrap items-center gap-3 mb-3">{companies.map(c => <button key={c.id} onClick={() => toggleCompare(c.id)} className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all", effectiveCompareIds.includes(c.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>{c.name}</button>)}</div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <select value={compareSector} onChange={e => setCompareSector(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
-              <option value="">Todos os setores</option>
-              {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+        {/* Relatório Comparativo - hide for company_user */}
+        {!isCompanyUser && (
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2"><GitCompareArrows className="h-4 w-4 text-primary" /> Relatório Comparativo</h3>
+            <div className="flex flex-wrap items-center gap-3 mb-3">{companies.map(c => <button key={c.id} onClick={() => toggleCompare(c.id)} className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all", effectiveCompareIds.includes(c.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>{c.name}</button>)}</div>
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <select value={compareSector} onChange={e => setCompareSector(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
+                <option value="">Todos os setores</option>
+                {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            {effectiveCompareIds.length >= 2 && <div className="flex flex-wrap gap-2">
+              <button onClick={() => handleExport("PDF Comparativo", () => exportComparisonPDF(effectiveCompareIds, exportData, compareSector || undefined))} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF Comparativo</button>
+              <button onClick={() => handleExport("CSV Comparativo", () => exportComparisonReport(effectiveCompareIds, exportData))} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV Comparativo</button>
+            </div>}
           </div>
-          {effectiveCompareIds.length >= 2 && <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleExport("PDF Comparativo", () => exportComparisonPDF(effectiveCompareIds, exportData, compareSector || undefined))} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"><FileDown className="h-4 w-4" /> PDF Comparativo</button>
-            <button onClick={() => handleExport("CSV Comparativo", () => exportComparisonReport(effectiveCompareIds, exportData))} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"><Download className="h-4 w-4" /> CSV Comparativo</button>
-          </div>}
-        </div>
+        )}
 
         {/* Dados Brutos */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">

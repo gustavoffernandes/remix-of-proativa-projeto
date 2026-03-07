@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verificar se o caller é um usuário válido
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -35,7 +34,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verificar se o caller tem role de admin
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -51,7 +49,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { email, password, role = "user" } = await req.json();
+    const { email, password, role = "user", company_id = null } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -67,16 +65,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validar role enviado
-    const allowedRoles = ["admin", "user"];
+    const allowedRoles = ["admin", "user", "company_user"];
     if (!allowedRoles.includes(role)) {
       return new Response(
-        JSON.stringify({ error: "Role inválido. Use 'admin' ou 'user'." }),
+        JSON.stringify({ error: "Role inválido. Use 'admin', 'user' ou 'company_user'." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Criar usuário com service role
+    if (role === "company_user" && !company_id) {
+      return new Response(
+        JSON.stringify({ error: "Para o tipo 'Usuário Empresa', é obrigatório selecionar uma empresa." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -90,13 +93,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Atribuir role ao novo usuário
+    const roleInsert: Record<string, unknown> = { user_id: data.user.id, role };
+    if (role === "company_user" && company_id) {
+      roleInsert.company_id = company_id;
+    }
+
     const { error: roleError } = await adminClient
       .from("user_roles")
-      .insert({ user_id: data.user.id, role });
+      .insert(roleInsert);
 
     if (roleError) {
-      // Rollback: deletar usuário criado se não conseguir atribuir role
       await adminClient.auth.admin.deleteUser(data.user.id);
       return new Response(
         JSON.stringify({ error: "Erro ao atribuir role ao usuário." }),
@@ -105,7 +111,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, user: { id: data.user.id, email: data.user.email, role } }),
+      JSON.stringify({ success: true, user: { id: data.user.id, email: data.user.email, role, company_id: role === "company_user" ? company_id : null } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
