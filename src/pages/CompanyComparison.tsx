@@ -14,6 +14,7 @@ const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)",
 
 export default function CompanyComparison() {
   const { isCompanyUser } = useAuth();
+  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections, getSectorAverages } = useSurveyData();
   const [selected, setSelected] = useState<string[]>([]);
   const [compareMode, setCompareMode] = useState<"company" | "sector">("company");
   const [sectorCompanyId, setSectorCompanyId] = useState<string>("");
