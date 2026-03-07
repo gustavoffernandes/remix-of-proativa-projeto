@@ -1,73 +1,190 @@
-# Welcome to your Lovable project
+# PROATIVA — Dashboard de Análise de Pesquisas
 
-## Project info
+Sistema de dashboard para leitura, armazenamento e análise de respostas vindas do Google Forms (via Google Sheets).  
+Desenvolvido com **React**, **Vite**, **TypeScript** e **Lovable Cloud** (PostgreSQL, Auth, Edge Functions).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 📋 Pré-requisitos
 
-There are several ways of editing your application.
+| Ferramenta | Windows | Mac |
+|---|---|---|
+| **Node.js** (v18+) | [Baixar instalador .msi (LTS)](https://nodejs.org/) | `brew install node` |
+| **Git** | [Baixar Git for Windows](https://git-scm.com/download/win) | `brew install git` (ou já vem instalado) |
 
-**Use Lovable**
+> **Mac:** Se não tem o Homebrew, instale com:  
+> ```bash
+> /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+> ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Instalação Rápida
 
-**Use your preferred IDE**
+### 1. Clonar o repositório
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+git clone <URL_DO_SEU_REPOSITORIO>
+cd remix-of-data-insight-hub-1
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Instalar dependências
 
-Follow these steps:
+```bash
+npm install
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 3. Rodar a aplicação
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Acesse no navegador: **http://localhost:8080/**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 🔑 Funcionalidades
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Página | Descrição |
+|---|---|
+| **Dashboard** | Visão geral com KPIs, gráficos de fatores de risco e métricas consolidadas |
+| **Análise da Pesquisa** | Análise detalhada por pergunta com gráficos interativos |
+| **Heatmap** | Mapa de calor por fator e setor da empresa |
+| **Comparativo** | Comparação entre empresas cadastradas |
+| **Demografia** | Distribuição demográfica dos respondentes |
+| **Planos de Ação** | Criação e acompanhamento de planos baseados nos riscos |
+| **Anotações** | Notas e observações por empresa |
+| **Relatórios** | Exportação de relatórios em PDF |
+| **Integrações** | Configuração da sincronização com Google Sheets |
+| **Configurações** | Gestão de usuários (admin) |
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 📊 Guia de Integração com Google Forms (Passo a Passo)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Esta seção explica como configurar a integração entre o Google Forms e o PROATIVA para importar automaticamente as respostas das pesquisas.
 
-## How can I deploy this project?
+### Passo 1: Criar o formulário no Google Forms
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+1. Acesse [Google Forms](https://docs.google.com/forms)
+2. Crie um novo formulário com as perguntas da pesquisa
+3. O formulário deve conter as seguintes colunas demográficas (opcionais, mas recomendadas):
+   - **Nome** do respondente
+   - **Idade** ou faixa etária
+   - **Sexo/Gênero**
+   - **Setor/Departamento**
+4. As demais perguntas serão tratadas como respostas da pesquisa (escala Likert: 1 a 5)
 
-## Can I connect a custom domain to my Lovable project?
+### Passo 2: Vincular a uma planilha Google Sheets
 
-Yes, you can!
+1. No Google Forms, clique na aba **Respostas**
+2. Clique no ícone do Google Sheets (ícone verde) → **Criar nova planilha**
+3. A planilha será criada automaticamente com as respostas
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Passo 3: Tornar a planilha acessível
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+A planilha precisa ser acessível pela API. Existem duas opções:
+
+**Opção A — Planilha pública (mais simples):**
+1. Abra a planilha no Google Sheets
+2. Clique em **Compartilhar** (botão no canto superior direito)
+3. Em "Acesso geral", altere para **Qualquer pessoa com o link**
+4. Permissão: **Leitor**
+
+**Opção B — Planilha privada com API Key restrita:**
+1. No [Google Cloud Console](https://console.cloud.google.com), restrinja a API Key ao domínio da sua planilha
+
+### Passo 4: Obter o ID da planilha
+
+O ID da planilha está na URL:
+
+```
+https://docs.google.com/spreadsheets/d/[ID_DA_PLANILHA]/edit
+```
+
+Exemplo: se a URL é `https://docs.google.com/spreadsheets/d/1h2CrVt0qGKP6re7l9lMG3F17GJ5DtIdLvp9QNqELCTI/edit`, o ID é `1h2CrVt0qGKP6re7l9lMG3F17GJ5DtIdLvp9QNqELCTI`.
+
+### Passo 5: Verificar o nome da aba
+
+1. Abra a planilha no Google Sheets
+2. Na parte inferior, verifique o nome da aba onde estão as respostas
+3. Geralmente é **"Respostas ao formulário 1"** ou **"Form Responses 1"**
+4. Copie o nome exato (incluindo acentos e espaços)
+
+### Passo 6: Cadastrar no PROATIVA
+
+1. Faça login no sistema como **administrador**
+2. No menu lateral, acesse **Integrações**
+3. Clique em **Nova Integração**
+4. Preencha os campos:
+   - **Nome da Empresa**: Nome que identifica a empresa pesquisada
+   - **ID da Planilha**: Cole o ID obtido no Passo 4
+   - **Nome da Aba**: Nome exato da aba (Passo 5)
+   - **URL do Formulário** (opcional): Link direto para a planilha ou formulário
+5. Clique em **Salvar**
+
+### Passo 7: Sincronizar
+
+1. Na lista de integrações, localize a empresa cadastrada
+2. Clique no botão **Sincronizar**
+3. Aguarde a conclusão — o sistema mostrará quantas respostas foram importadas
+4. Acesse o **Dashboard** para visualizar os dados
+
+### ⚠️ Observações Importantes
+
+- A sincronização **substitui** todas as respostas anteriores da empresa (não é incremental)
+- O sistema identifica automaticamente as colunas de **nome**, **idade**, **sexo** e **setor** pelo nome do cabeçalho
+- Todas as demais colunas são tratadas como **perguntas da pesquisa**
+- Respostas devem usar escala numérica (1 a 5) para os cálculos funcionarem corretamente
+- A `GOOGLE_SHEETS_API_KEY` deve estar configurada nos segredos do backend
+
+---
+
+## 🔒 Autenticação e Permissões
+
+| Papel | Permissões |
+|---|---|
+| **Admin** | Gerenciar integrações, criar usuários, acessar todas as funcionalidades |
+| **Usuário** | Visualizar dashboards, criar planos de ação e anotações |
+
+O primeiro usuário admin deve ser criado diretamente no backend. Após isso, o admin pode criar novos usuários pela tela de **Configurações**.
+
+---
+
+## 📂 Estrutura do Projeto
+
+```
+src/
+├── components/       → Componentes reutilizáveis (UI, gráficos, tabelas)
+├── pages/            → Páginas (Dashboard, Login, Relatórios, Configurações)
+├── hooks/            → Hooks customizados (useSurveyData, useActionPlans)
+├── integrations/     → Cliente backend + tipagens TypeScript
+├── contexts/         → Contextos React (AuthContext)
+├── lib/              → Utilitários (exportação PDF, metodologia PROART)
+└── data/             → Dados mock para desenvolvimento
+
+supabase/
+├── migrations/       → Estrutura SQL do banco
+└── functions/        → Funções backend serverless
+    └── sync-google-sheets/  → Sincronização com Google Sheets
+```
+
+---
+
+## 🆘 Troubleshooting
+
+| Problema | Solução |
+|---|---|
+| Tela em branco / "Cannot connect" | Verifique se o servidor está rodando (`npm run dev`) |
+| Porta 8080 em uso | **Windows:** `netstat -ano \| findstr :8080` → `taskkill /PID <PID> /F`. **Mac:** `lsof -i :8080` → `kill -9 <PID>` |
+| Erro na sincronização "Failed to fetch" | Verifique se a `GOOGLE_SHEETS_API_KEY` está configurada nos segredos do backend |
+| Erro "Erro ao acessar Google Sheets" | Verifique se a planilha está compartilhada como "Qualquer pessoa com o link" e se o ID está correto |
+| "Nenhuma resposta encontrada" | Verifique se o nome da aba está correto e se há respostas na planilha |
+| Dados não aparecem no dashboard | Selecione a empresa correta no filtro do dashboard após sincronizar |
+
+---
+
+## 📄 Licença
+
+© 2026 PROATIVA. Todos os direitos reservados.
