@@ -18,6 +18,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import CompanyNotes from "./pages/CompanyNotes";
 import ActionPlans from "./pages/ActionPlans";
+import TemporalEvolution from "./pages/TemporalEvolution";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/empresas" element={<ProtectedRoute><CompanyComparison /></ProtectedRoute>} />
             <Route path="/demografico" element={<ProtectedRoute><Demographics /></ProtectedRoute>} />
             <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
+            <Route path="/evolucao" element={<ProtectedRoute><TemporalEvolution /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/integracoes" element={<ProtectedRoute requireAdmin><GoogleSheetsConfig /></ProtectedRoute>} />
             <Route path="/notas" element={<ProtectedRoute><CompanyNotes /></ProtectedRoute>} />
