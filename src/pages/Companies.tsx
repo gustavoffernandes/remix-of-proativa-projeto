@@ -107,6 +107,17 @@ export default function Companies() {
 
   const deleteCompany = useMutation({
     mutationFn: async (cnpj: string) => {
+      // First get all config IDs for this CNPJ
+      const configIds = configs.filter((c: any) => c.cnpj === cnpj).map((c: any) => c.id);
+      // Delete user_roles referencing these configs to avoid constraint violations
+      for (const configId of configIds) {
+        await (supabase.from("user_roles") as any).delete().eq("company_id", configId);
+      }
+      // Delete survey_responses for these configs
+      for (const configId of configIds) {
+        await supabase.from("survey_responses").delete().eq("config_id", configId);
+      }
+      // Now delete the configs
       const { error } = await (supabase
         .from("google_forms_config") as any)
         .delete()
