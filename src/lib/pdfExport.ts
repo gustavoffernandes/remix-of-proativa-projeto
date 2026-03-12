@@ -161,7 +161,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   const demoData = Object.entries(sexGroups).map(([sex, count]) => [sex, String(count), `${Math.round((count / pool.length) * 100)}%`]);
   autoTable(doc, {
     startY: y,
-    head: [["Gênero", "Quantidade", "Percentual"]],
+    head: [["Genero", "Quantidade", "Percentual"]],
     body: demoData,
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
