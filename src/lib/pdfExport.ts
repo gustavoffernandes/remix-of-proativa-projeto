@@ -277,7 +277,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // ==================== 3. P×S MATRIX ====================
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Cálculo do Risco P×S");
+  addHeader(doc, company.name, "Calculo do Risco PxS");
   addFooter(doc, pageNum.value);
 
   let py = 48;
