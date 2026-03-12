@@ -281,7 +281,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   addFooter(doc, pageNum.value);
 
   let py = 48;
-  py = addSectionTitle(doc, "3. Cálculo do Risco e Matriz P×S (SESI 2022)", py);
+  py = addSectionTitle(doc, "3. Calculo do Risco e Matriz PxS (SESI 2022)", py);
 
   const eotAvg = factorData.filter(f => f.scaleName === "EOT").reduce((a, f) => a + f.avg, 0) / Math.max(1, factorData.filter(f => f.scaleName === "EOT").length);
   const colAvg = factorData.find(f => f.factor.name.includes("Coletivista"))?.avg || 0;
