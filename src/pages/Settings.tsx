@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Settings as SettingsIcon, User, Bell, Palette, Shield, Save, UserPlus, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Palette, Shield, Save, UserPlus, Loader2, Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 
 type TabId = "perfil" | "usuarios" | "notificacoes" | "aparencia" | "geral";
+type ThemeMode = "light" | "dark" | "system";
 
 const allTabs: { id: TabId; label: string; icon: React.ElementType; adminOnly?: boolean }[] = [
   { id: "perfil", label: "Perfil", icon: User },
@@ -16,6 +17,21 @@ const allTabs: { id: TabId; label: string; icon: React.ElementType; adminOnly?: 
   { id: "aparencia", label: "Aparência", icon: Palette },
   { id: "geral", label: "Geral", icon: SettingsIcon },
 ];
+
+function getStoredTheme(): ThemeMode {
+  return (localStorage.getItem("proativa-theme") as ThemeMode) || "system";
+}
+
+function applyTheme(mode: ThemeMode) {
+  const root = document.documentElement;
+  if (mode === "system") {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.classList.toggle("dark", prefersDark);
+  } else {
+    root.classList.toggle("dark", mode === "dark");
+  }
+  localStorage.setItem("proativa-theme", mode);
+}
 
 export default function Settings() {
   const { user, isAdmin } = useAuth();
@@ -28,6 +44,19 @@ export default function Settings() {
   const [newUserRole, setNewUserRole] = useState<"admin" | "user" | "company_user">("user");
   const [newUserCompanyId, setNewUserCompanyId] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
+  const [fontSize, setFontSize] = useState<"normal" | "large">(
+    (localStorage.getItem("proativa-fontsize") as "normal" | "large") || "normal"
+  );
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = fontSize === "large" ? "18px" : "16px";
+    localStorage.setItem("proativa-fontsize", fontSize);
+  }, [fontSize]);
 
   const { data: companiesList = [] } = useQuery({
     queryKey: ["companies-for-user-creation"],
@@ -59,6 +88,12 @@ export default function Settings() {
     } catch (e: any) { toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" }); }
     setCreatingUser(false);
   };
+
+  const themeOptions: { mode: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
+    { mode: "light", label: "Claro", icon: Sun, description: "Tema claro padrão" },
+    { mode: "dark", label: "Escuro", icon: Moon, description: "Tema escuro para conforto visual" },
+    { mode: "system", label: "Sistema", icon: Monitor, description: "Segue a preferência do sistema operacional" },
+  ];
 
   return (
     <DashboardLayout>
@@ -133,9 +168,71 @@ export default function Settings() {
               </div>
             )}
             {activeTab === "aparencia" && (
-              <div className="space-y-4 max-w-md">
+              <div className="space-y-6 max-w-lg">
                 <h3 className="text-lg font-semibold text-card-foreground">Aparência</h3>
-                <p className="text-sm text-muted-foreground">Configurações de aparência em breve.</p>
+
+                {/* Theme */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Tema</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {themeOptions.map(opt => (
+                      <button
+                        key={opt.mode}
+                        onClick={() => setTheme(opt.mode)}
+                        className={cn(
+                          "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all",
+                          theme === opt.mode
+                            ? "border-primary bg-primary/5 shadow-md"
+                            : "border-border hover:border-primary/40 hover:bg-muted/50"
+                        )}
+                      >
+                        <opt.icon className={cn("h-6 w-6", theme === opt.mode ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn("text-sm font-medium", theme === opt.mode ? "text-primary" : "text-foreground")}>{opt.label}</span>
+                        <span className="text-[10px] text-muted-foreground text-center">{opt.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font size */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Tamanho da Fonte</label>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setFontSize("normal")}
+                      className={cn(
+                        "flex-1 rounded-xl border-2 p-3 text-center transition-all",
+                        fontSize === "normal" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      )}
+                    >
+                      <span className="text-sm font-medium">Aa</span>
+                      <p className="text-xs text-muted-foreground mt-1">Normal</p>
+                    </button>
+                    <button
+                      onClick={() => setFontSize("large")}
+                      className={cn(
+                        "flex-1 rounded-xl border-2 p-3 text-center transition-all",
+                        fontSize === "large" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      )}
+                    >
+                      <span className="text-lg font-medium">Aa</span>
+                      <p className="text-xs text-muted-foreground mt-1">Grande</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Accent color preview */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Cor de Destaque</label>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary" />
+                    <div className="h-10 w-10 rounded-lg bg-accent" />
+                    <div className="h-10 w-10 rounded-lg bg-success" />
+                    <div className="h-10 w-10 rounded-lg bg-warning" />
+                    <div className="h-10 w-10 rounded-lg bg-destructive" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">As cores do sistema são configuradas pelo design system da PROATIVA.</p>
+                </div>
               </div>
             )}
             {activeTab === "geral" && (

@@ -28,6 +28,85 @@ const COMPANY_COLORS = [
   "hsl(330, 65%, 50%)", "hsl(150, 55%, 45%)",
 ];
 
+// ========== IMPROVED QUESTION MATCHING ==========
+
+/**
+ * Normalize text for comparison: lowercase, remove accents, extra spaces, punctuation
+ */
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Build a lookup map from question texts to question IDs.
+ * Uses multiple strategies: exact normalized match, keyword extraction, and partial containment.
+ */
+function buildQuestionMatcher(): (columnHeader: string) => string | null {
+  // Pre-compute normalized versions of all questions
+  const normalizedQuestions = questions.map(q => ({
+    id: q.id,
+    section: q.section,
+    number: q.number,
+    originalText: q.text,
+    normalized: normalize(q.text),
+    // Extract significant words (>= 4 chars) for keyword matching
+    keywords: normalize(q.text).split(" ").filter(w => w.length >= 4),
+  }));
+
+  return (columnHeader: string): string | null => {
+    const normalizedHeader = normalize(columnHeader);
+    if (!normalizedHeader || normalizedHeader.length < 3) return null;
+
+    // Strategy 1: Exact normalized match
+    const exact = normalizedQuestions.find(q => q.normalized === normalizedHeader);
+    if (exact) return exact.id;
+
+    // Strategy 2: Header contains the question text or vice-versa
+    const contained = normalizedQuestions.find(q =>
+      normalizedHeader.includes(q.normalized) || q.normalized.includes(normalizedHeader)
+    );
+    if (contained) return contained.id;
+
+    // Strategy 3: Keyword matching - find question where most keywords match
+    let bestMatch: { id: string; score: number } | null = null;
+    for (const q of normalizedQuestions) {
+      if (q.keywords.length === 0) continue;
+      const matchedKeywords = q.keywords.filter(kw => normalizedHeader.includes(kw));
+      const score = matchedKeywords.length / q.keywords.length;
+      // Require at least 60% keyword match and minimum 2 keywords matched
+      if (score >= 0.6 && matchedKeywords.length >= Math.min(2, q.keywords.length)) {
+        if (!bestMatch || score > bestMatch.score) {
+          bestMatch = { id: q.id, score };
+        }
+      }
+    }
+    if (bestMatch) return bestMatch.id;
+
+    // Strategy 4: For very short questions (single/double words like "Amargura", "Tristeza")
+    // check if any short question text appears as a word in the header
+    const shortQuestions = normalizedQuestions.filter(q => q.normalized.split(" ").length <= 3);
+    for (const q of shortQuestions) {
+      const headerWords = normalizedHeader.split(" ");
+      const qWords = q.normalized.split(" ");
+      // All question words must appear in header
+      if (qWords.every(qw => headerWords.some(hw => hw.includes(qw) || qw.includes(hw)))) {
+        return q.id;
+      }
+    }
+
+    return null;
+  };
+}
+
+// Create singleton matcher
+const matchQuestion = buildQuestionMatcher();
+
 export function useSurveyData() {
   const { userCompanyId, isCompanyUser } = useAuth();
 
@@ -79,25 +158,22 @@ export function useSurveyData() {
 
     if (r.answers) {
       Object.entries(r.answers).forEach(([columnHeader, cellValue]) => {
-        const matchedQuestion = questions.find(q => 
-          columnHeader.toLowerCase().includes(q.text.toLowerCase()) ||
-          q.text.toLowerCase().includes(columnHeader.toLowerCase())
-        );
+        const matchedQuestionId = matchQuestion(columnHeader);
 
-        if (matchedQuestion) {
+        if (matchedQuestionId) {
           let numValue = parseInt(String(cellValue), 10);
 
           if (isNaN(numValue)) {
             const textVal = String(cellValue).toLowerCase();
             if (textVal.includes("nunca")) numValue = 1;
             else if (textVal.includes("raramente")) numValue = 2;
-            else if (textVal.includes("vezes")) numValue = 3;
-            else if (textVal.includes("frequentemente")) numValue = 4;
+            else if (textVal.includes("vezes") || textVal.includes("às vezes")) numValue = 3;
+            else if (textVal.includes("frequentemente") || textVal.includes("frequente")) numValue = 4;
             else if (textVal.includes("sempre")) numValue = 5;
           }
 
           if (numValue >= 1 && numValue <= 5) {
-            formattedAnswers[matchedQuestion.id] = numValue;
+            formattedAnswers[matchedQuestionId] = numValue;
           }
         }
       });

@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BarChart3, Building2, Users, FileText, Download,
-  Settings, ChevronLeft, ChevronRight, Shield, Link2, X, LogOut, StickyNote, ClipboardList, TrendingUp
+  Settings, ChevronLeft, ChevronRight, Shield, Link2, X, LogOut, StickyNote, ClipboardList, TrendingUp, Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ const menuItems = [
   { path: "/relatorios", label: "Relatórios", icon: Download, adminOnly: false, hideForCompanyUser: false },
   { path: "/plano-acao", label: "Plano de Ação", icon: ClipboardList, adminOnly: false, hideForCompanyUser: false },
   { path: "/notas", label: "Bloco de Notas", icon: StickyNote, adminOnly: false, hideForCompanyUser: true },
+  { path: "/empresas-cadastro", label: "Empresas", icon: Briefcase, adminOnly: true, hideForCompanyUser: false },
   { path: "/integracoes", label: "Integrações", icon: Link2, adminOnly: true, hideForCompanyUser: false },
 ];
 
