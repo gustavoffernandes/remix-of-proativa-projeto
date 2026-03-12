@@ -201,9 +201,9 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.text);
-    doc.text(`${scale.shortName} – ${scale.name}`, MARGIN + 6, y);
+    doc.text(removeDiacritics(`${scale.shortName} - ${scale.name}`), MARGIN + 6, y);
     doc.setTextColor(...scaleCls.color);
-    doc.text(`${scaleAvg.toFixed(2)} - ${scaleCls.label}`, 140, y);
+    doc.text(`${scaleAvg.toFixed(2)} - ${removeDiacritics(scaleCls.label)}`, 140, y);
     doc.setTextColor(...COLORS.text);
     y += 7;
 
