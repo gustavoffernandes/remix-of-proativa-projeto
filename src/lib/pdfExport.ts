@@ -390,67 +390,76 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   addFooter(doc, pageNum.value);
 
   let cy = 48;
-  cy = addSectionTitle(doc, "4. Conclusão", cy);
+  cy = addSectionTitle(doc, "4. Conclusao", cy);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
-  const riskLabelMap: Record<string, string> = { "PR1": "CRÍTICO", "PR2": "ALTO", "PR3": "MODERADO", "PR4": "BAIXO", "NA": "MUITO BAIXO" };
+  const riskLabelMap: Record<string, string> = { "PR1": "CRITICO", "PR2": "ALTO", "PR3": "MODERADO", "PR4": "BAIXO", "NA": "MUITO BAIXO" };
 
   const wrapText = (text: string, maxWidth: number): string[] => {
     return doc.splitTextToSize(text, maxWidth);
   };
 
-  const conclusionLines = wrapText(
-    `A avaliação dos riscos psicossociais realizada através do Protocolo PROART (Protocolo de Avaliação dos Riscos Psicossociais no Trabalho), desenvolvido pelo Dr. Emílio Peres Facas da Universidade de Brasília, revelou que o ambiente de trabalho da empresa ${company.name} apresenta classificação de risco ${riskLabelMap[pxs.prLevel] || "MODERADO"} (${pxs.prLevel}), com índice P×S igual a ${pxs.risk}.`,
-    CONTENT_WIDTH
+  const conclusionText = removeDiacritics(
+    `A avaliacao dos riscos psicossociais realizada atraves do Protocolo PROART (Protocolo de Avaliacao dos Riscos Psicossociais no Trabalho), desenvolvido pelo Dr. Emilio Peres Facas da Universidade de Brasilia, revelou que o ambiente de trabalho da empresa ${company.name} apresenta classificacao de risco ${riskLabelMap[pxs.prLevel] || "MODERADO"} (${pxs.prLevel}), com indice PxS igual a ${pxs.risk}.`
   );
 
+  const conclusionLines = wrapText(conclusionText, CONTENT_WIDTH);
   conclusionLines.forEach((line: string) => {
     doc.text(line, MARGIN, cy); cy += 4.5;
   });
-  cy += 4;
+  cy += 6;
 
+  // Attention points as a structured table
   doc.setFont("helvetica", "bold");
-  doc.text("Principais pontos de atenção identificados:", MARGIN, cy); cy += 6;
-  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Principais pontos de atencao identificados:", MARGIN, cy); cy += 6;
 
+  const attentionData: string[][] = [];
   PROART_SCALES.forEach(scale => {
     const scaleFactors = factorData.filter(f => f.factor.scaleId === scale.id);
     const scaleAvg = scaleFactors.length > 0 ? scaleFactors.reduce((a, f) => a + f.avg, 0) / scaleFactors.length : 0;
     const scaleType = scale.type === "positive" ? "positive" as const : "negative" as const;
     const cls = getClassification(scaleAvg, scaleType);
-
-    doc.setTextColor(...cls.color);
-    doc.text(`•`, MARGIN + 2, cy);
-    doc.setTextColor(...COLORS.text);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${scale.name}:`, MARGIN + 6, cy);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...cls.color);
-    doc.text(`${cls.label} (média ${scaleAvg.toFixed(2)})`, MARGIN + 6 + doc.getTextWidth(`${scale.name}: `), cy);
-    doc.setTextColor(...COLORS.text);
-    cy += 5;
-
-    // List risky factors
-    const riskyFactors = scaleFactors.filter(f => f.risk === "high" || f.risk === "medium");
-    riskyFactors.forEach(f => {
-      cy = checkPageBreak(doc, cy, 5, company.name, "Conclusão", pageNum);
-      doc.setFontSize(8);
-      doc.text(`    - ${f.factor.name}: ${f.avg.toFixed(2)} (${f.cls.label})`, MARGIN + 8, cy);
-      cy += 4;
+    
+    attentionData.push([removeDiacritics(scale.shortName), removeDiacritics(scale.name), scaleAvg.toFixed(2), removeDiacritics(cls.label)]);
+    
+    const riskyFactorsInScale = scaleFactors.filter(f => f.risk === "high" || f.risk === "medium");
+    riskyFactorsInScale.forEach(f => {
+      attentionData.push(["", `  - ${removeDiacritics(f.factor.name)}`, f.avg.toFixed(2), removeDiacritics(f.cls.label)]);
     });
-    doc.setFontSize(9);
   });
 
-  cy += 4;
-  cy = checkPageBreak(doc, cy, 15, company.name, "Conclusão", pageNum);
+  autoTable(doc, {
+    startY: cy,
+    head: [["Escala", "Descricao", "Media", "Classificacao"]],
+    body: attentionData,
+    theme: "grid",
+    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 8, textColor: COLORS.text },
+    columnStyles: { 0: { cellWidth: 18, fontStyle: "bold" }, 2: { cellWidth: 18, halign: "center" }, 3: { cellWidth: 30 } },
+    alternateRowStyles: { fillColor: COLORS.bg },
+    margin: { left: MARGIN, right: MARGIN },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 3) {
+        const label = String(data.cell.raw);
+        if (label.includes("Alto")) data.cell.styles.textColor = COLORS.danger;
+        else if (label.includes("Medio")) data.cell.styles.textColor = COLORS.warning;
+        else data.cell.styles.textColor = COLORS.success;
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  });
+  cy = (doc as any).lastAutoTable?.finalY + 8 || cy + 40;
 
-  const recLines = wrapText(
-    `Recomenda-se a implementação prioritária das ações propostas no Plano de Ação (seção 5), com reavaliação em ${pxs.deadlineDays === 0 ? "até 30 dias" : pxs.deadlineDays + " dias"} para acompanhamento da evolução dos indicadores. As intervenções devem priorizar os fatores classificados como Risco Alto.`,
-    CONTENT_WIDTH
+  cy = checkPageBreak(doc, cy, 20, company.name, "Conclusao", pageNum);
+
+  const recText = removeDiacritics(
+    `Recomenda-se a implementacao prioritaria das acoes propostas no Plano de Acao (secao 5), com reavaliacao em ${pxs.deadlineDays === 0 ? "ate 30 dias" : pxs.deadlineDays + " dias"} para acompanhamento da evolucao dos indicadores. As intervencoes devem priorizar os fatores classificados como Risco Alto.`
   );
+  const recLines = wrapText(recText, CONTENT_WIDTH);
   recLines.forEach((line: string) => {
     doc.text(line, MARGIN, cy); cy += 4.5;
   });
