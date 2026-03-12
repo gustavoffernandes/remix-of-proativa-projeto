@@ -632,8 +632,8 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   doc.setFontSize(8);
   doc.text(`Relatório gerado automaticamente em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`, MARGIN, fy); fy += 5;
   doc.text(`Empresa avaliada: ${company.name}`, MARGIN, fy); fy += 8;
-  doc.text("As interpretações e recomendações devem ser validadas por profissional habilitado em", MARGIN, fy); fy += 4;
-  doc.text("saúde e segurança do trabalho.", MARGIN, fy);
+  doc.text("As interpretacoes e recomendacoes devem ser validadas por profissional habilitado em", MARGIN, fy); fy += 4;
+  doc.text("saude e seguranca do trabalho.", MARGIN, fy);
 
   doc.save(`relatorio_PROART_${company.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
 }
