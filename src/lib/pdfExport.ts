@@ -302,7 +302,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
-  doc.text("RISCO = PROBABILIDADE (P) × SEVERIDADE (S)", MARGIN, py); py += 8;
+  doc.text("RISCO = PROBABILIDADE (P) x SEVERIDADE (S)", MARGIN, py); py += 8;
 
   // Variables table
   autoTable(doc, {
