@@ -123,11 +123,11 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   const infoData = [
     ["Empresa", company.name],
-    ["Setor", company.sector],
-    ["Nº de Funcionários", String(company.employees)],
-    ["Questionários Preenchidos", String(pool.length)],
+    ["Setor", company.sector || "Nao informado"],
+    ["No de Funcionarios", String(company.employees || "N/A")],
+    ["Questionarios Preenchidos", String(pool.length)],
     ["Taxa de Resposta", `${company.employees > 0 ? Math.round((pool.length / company.employees) * 100) : 0}%`],
-    ["Data do Relatório", new Date().toLocaleDateString("pt-BR")],
+    ["Data do Relatorio", new Date().toLocaleDateString("pt-BR")],
   ];
 
   autoTable(doc, {
