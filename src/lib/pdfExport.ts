@@ -109,7 +109,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   const availableQuestions = data.getAvailableQuestions();
   const pageNum = { value: 1 };
 
-  addHeader(doc, company.name, "Relatório PROART - Avaliação de Riscos Psicossociais");
+  addHeader(doc, company.name, "Relatorio PROART - Avaliacao de Riscos Psicossociais");
   addFooter(doc, pageNum.value);
 
   let y = 48;
