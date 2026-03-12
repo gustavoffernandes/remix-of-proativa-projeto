@@ -115,7 +115,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   let y = 48;
 
   // ==================== 1. COMPANY INFO ====================
-  y = addSectionTitle(doc, "1. Informações da Avaliação", y);
+  y = addSectionTitle(doc, "1. Informacoes da Avaliacao", y);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
