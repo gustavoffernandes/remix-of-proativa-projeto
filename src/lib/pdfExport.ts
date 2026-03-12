@@ -454,18 +454,18 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
   // Uses the EXACT SAME logic as ActionPlans.tsx page
   doc.addPage();
   pageNum.value++;
-  addHeader(doc, company.name, "Plano de Ação");
+  addHeader(doc, company.name, "Plano de Acao");
   addFooter(doc, pageNum.value);
 
   let ay = 48;
-  ay = addSectionTitle(doc, "5. Plano de Ação Sugerido", ay);
+  ay = addSectionTitle(doc, "5. Plano de Acao Sugerido", ay);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
   const introLines = wrapText(
-    "Com base nos resultados obtidos e utilizando a mesma lógica de geração automática de planos da plataforma, recomenda-se a implementação das seguintes ações para os fatores identificados com risco médio ou alto:",
+    "Com base nos resultados obtidos e utilizando a mesma logica de geracao automatica de planos da plataforma, recomenda-se a implementacao das seguintes acoes para os fatores identificados com risco medio ou alto:",
     CONTENT_WIDTH
   );
   introLines.forEach((line: string) => {
@@ -478,14 +478,14 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   if (riskyFactors.length === 0) {
     doc.setFont("helvetica", "italic");
-    doc.text("Nenhum fator com risco médio ou alto identificado. Manter controles existentes.", MARGIN, ay);
+    doc.text("Nenhum fator com risco medio ou alto identificado. Manter controles existentes.", MARGIN, ay);
   } else {
     let planNum = 1;
     riskyFactors.forEach(f => {
       const suggested = getSuggestedActions(f.factor.id, f.risk);
       if (!suggested) return;
 
-      ay = checkPageBreak(doc, ay, 25, company.name, "Plano de Ação (cont.)", pageNum);
+      ay = checkPageBreak(doc, ay, 30, company.name, "Plano de Acao (cont.)", pageNum);
 
       // Plan header
       doc.setFillColor(...(f.risk === "high" ? COLORS.danger : COLORS.warning));
@@ -493,25 +493,32 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.text(`${planNum}. ${suggested.title}`, MARGIN + 6, ay);
+      doc.text(`${planNum}. ${removeDiacritics(suggested.title)}`, MARGIN + 6, ay);
       ay += 5;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...COLORS.muted);
-      doc.text(`Fator: ${f.factor.name} | Média: ${f.avg.toFixed(2)} | ${getRiskLabel(f.risk)} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
+      doc.text(`Fator: ${removeDiacritics(f.factor.name)} | Media: ${f.avg.toFixed(2)} | ${removeDiacritics(getRiskLabel(f.risk))} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
       doc.setTextColor(...COLORS.text);
-      ay += 5;
+      ay += 6;
 
-      // Tasks
-      suggested.tasks.forEach(task => {
-        ay = checkPageBreak(doc, ay, 5, company.name, "Plano de Ação (cont.)", pageNum);
-        doc.setFontSize(8);
-        doc.text(`  ☐ ${task}`, MARGIN + 8, ay);
-        ay += 4;
+      // Tasks as a clean table
+      const taskData = suggested.tasks.map((task, i) => [`${i + 1}`, removeDiacritics(task)]);
+      
+      autoTable(doc, {
+        startY: ay,
+        body: taskData,
+        theme: "plain",
+        bodyStyles: { fontSize: 7.5, textColor: COLORS.text, cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 } },
+        columnStyles: { 
+          0: { cellWidth: 8, halign: "center", fontStyle: "bold", textColor: COLORS.accent },
+          1: { cellWidth: CONTENT_WIDTH - 20 }
+        },
+        margin: { left: MARGIN + 8, right: MARGIN },
       });
+      ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
 
-      ay += 4;
       planNum++;
     });
   }
