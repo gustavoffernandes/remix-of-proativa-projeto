@@ -663,7 +663,7 @@ export function exportComparisonPDF(companyIds: string[], data: PDFExportData, s
 
   autoTable(doc, {
     startY: y,
-    head: [["Empresa", "Respostas", ...availableSections.map(s => s.shortName), "Média"]],
+    head: [["Empresa", "Respostas", ...availableSections.map(s => s.shortName), "Media"]],
     body: overviewData,
     theme: "grid",
     headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
