@@ -12,6 +12,7 @@ CREATE POLICY "Users can read own role" ON public.user_roles FOR SELECT USING (a
 CREATE TABLE public.google_forms_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_name TEXT NOT NULL,
+  cnpj TEXT NOT NULL,
   spreadsheet_id TEXT NOT NULL,
   sheet_name TEXT NOT NULL DEFAULT 'Form Responses 1',
   form_url TEXT,
