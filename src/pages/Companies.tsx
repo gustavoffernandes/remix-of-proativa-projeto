@@ -111,29 +111,47 @@ export default function Companies() {
 
   const updateCompany = useMutation({
     mutationFn: async ({ cnpj, newName, sector, employee_count }: { cnpj: string; newName: string; sector: string; employee_count: string }) => {
-      const updateData: any = { company_name: newName };
-      if (sector !== undefined) updateData.sector = sector || null;
-      if (employee_count !== undefined) updateData.employee_count = employee_count ? parseInt(employee_count) : null;
+      const normalizedName = newName.trim();
+      if (!normalizedName) throw new Error("Nome da empresa é obrigatório");
 
-      const targetConfigs = configs
-        .filter((c: any) => c.cnpj === cnpj)
-        .sort((a: any, b: any) => Number(a.spreadsheet_id === "__placeholder__") - Number(b.spreadsheet_id === "__placeholder__"));
+      const parsedEmployeeCount = employee_count ? Number(employee_count) : null;
+      if (employee_count && (!Number.isInteger(parsedEmployeeCount) || parsedEmployeeCount < 1)) {
+        throw new Error("Número de funcionários inválido");
+      }
 
-      const results = await Promise.all(
-        targetConfigs.map(async (config: any) => {
-          const { data, error } = await (supabase
-            .from("google_forms_config") as any)
-            .update(updateData)
-            .eq("id", config.id)
-            .select("id");
-          return { data, error };
-        }),
-      );
+      const updateData: any = {
+        company_name: normalizedName,
+        sector: sector?.trim() || null,
+        employee_count: parsedEmployeeCount,
+      };
 
-      const successCount = results.filter((result) => !result.error && Array.isArray(result.data) && result.data.length > 0).length;
-      if (successCount === 0) {
-        const firstError = results.find((result) => result.error)?.error;
-        throw new Error(firstError?.message || "Não foi possível atualizar a empresa. Verifique as permissões desta conta.");
+      const { error: updateError } = await (supabase
+        .from("google_forms_config") as any)
+        .update(updateData)
+        .eq("cnpj", cnpj);
+
+      if (updateError) throw updateError;
+
+      let verificationQuery: any = (supabase
+        .from("google_forms_config") as any)
+        .select("id")
+        .eq("cnpj", cnpj)
+        .eq("company_name", normalizedName)
+        .limit(1);
+
+      verificationQuery = updateData.sector === null
+        ? verificationQuery.is("sector", null)
+        : verificationQuery.eq("sector", updateData.sector);
+
+      verificationQuery = updateData.employee_count === null
+        ? verificationQuery.is("employee_count", null)
+        : verificationQuery.eq("employee_count", updateData.employee_count);
+
+      const { data: verificationRows, error: verificationError } = await verificationQuery;
+      if (verificationError) throw verificationError;
+
+      if (!verificationRows || verificationRows.length === 0) {
+        throw new Error("Não foi possível atualizar a empresa. Verifique as permissões desta conta.");
       }
     },
     onSuccess: () => {
