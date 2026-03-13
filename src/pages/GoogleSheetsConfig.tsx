@@ -29,7 +29,7 @@ function formatCNPJ(value: string): string {
 export default function GoogleSheetsConfig() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ company_cnpj: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
+  const [formData, setFormData] = useState({ company_cnpj: "", form_title: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
 
   // Fetch all configs (including placeholders for company list)
   const { data: allConfigs = [], isLoading: loadingAll } = useQuery({
@@ -87,6 +87,7 @@ export default function GoogleSheetsConfig() {
       const { error } = await supabase.from("google_forms_config").insert([{
         company_name: companyName,
         cnpj: newConfig.company_cnpj,
+        form_title: newConfig.form_title || null,
         spreadsheet_id: newConfig.spreadsheet_id,
         sheet_name: newConfig.sheet_name,
         form_url: newConfig.form_url || null,
@@ -98,7 +99,7 @@ export default function GoogleSheetsConfig() {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });
       setShowForm(false);
-      setFormData({ company_cnpj: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
+      setFormData({ company_cnpj: "", form_title: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
       toast({ title: "Formulário adicionado!" });
     },
     onError: (e: Error) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -205,6 +206,11 @@ export default function GoogleSheetsConfig() {
                     </select>
                   </div>
                   <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">Título do Formulário</label>
+                    <input value={formData.form_title} onChange={e => setFormData({ ...formData, form_title: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" placeholder="Ex: Pesquisa 2026 - Sede" />
+                    <p className="text-[10px] text-muted-foreground">Nome de identificação do formulário (exibido nos filtros).</p>
+                  </div>
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">ID da Planilha</label>
                     <input value={formData.spreadsheet_id} onChange={e => setFormData({ ...formData, spreadsheet_id: e.target.value })} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition" placeholder="ID do Google Sheets" />
                   </div>
@@ -240,7 +246,7 @@ export default function GoogleSheetsConfig() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
+                        <h3 className="text-sm font-semibold text-card-foreground truncate">{(config as any).form_title || config.company_name}</h3>
                         {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
                       </div>
                       {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}

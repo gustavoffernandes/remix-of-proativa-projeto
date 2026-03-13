@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useActionPlans } from "@/hooks/useActionPlans";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
   calculatePxS, getPRLevelLabel, getPRLevelColor, getPRLevelBgColor,
@@ -15,9 +16,10 @@ import { Progress } from "@/components/ui/progress";
 
 export default function ActionPlans() {
   const { user, isCompanyUser } = useAuth();
-  const { isLoading: loadingSurvey, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections } = useSurveyData();
+  const { isLoading: loadingSurvey, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections, getFormConfigsForCompany } = useSurveyData();
   const { plans, tasks, isLoading: loadingPlans, createPlan, updatePlanStatus, deletePlan, createTask, updateTask, deleteTask } = useActionPlans();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [editingObs, setEditingObs] = useState<string | null>(null);
@@ -31,7 +33,9 @@ export default function ActionPlans() {
 
   const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : (selectedCompany || companies[0]?.id || "");
   const company = companies.find(c => c.id === effectiveCompany);
-  const pool = getCompanyRespondents(effectiveCompany);
+  const companyForms = getFormConfigsForCompany(effectiveCompany);
+  let pool = getCompanyRespondents(effectiveCompany);
+  if (selectedFormId) pool = pool.filter(r => r.configId === selectedFormId);
   const availableSections = getAvailableSections();
   const companyPlans = plans.filter(p => p.company_config_id === effectiveCompany);
 
@@ -109,9 +113,12 @@ export default function ActionPlans() {
             </p>
           </div>
           {!isCompanyUser && (
-            <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <select value={effectiveCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedFormId(""); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={setSelectedFormId} />
+            </div>
           )}
         </div>
 

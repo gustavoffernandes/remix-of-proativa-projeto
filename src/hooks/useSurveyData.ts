@@ -22,6 +22,12 @@ export interface RealCompany {
   color: string;
 }
 
+export interface FormConfig {
+  configId: string;
+  companyKey: string;
+  title: string;
+}
+
 const COMPANY_COLORS = [
   "hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)",
   "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)",
@@ -141,8 +147,10 @@ export function useSurveyData() {
   const cnpjToConfigIds = new Map<string, string[]>();
   const cnpjToCompanyInfo = new Map<string, { name: string; sector: string; employees: number | null; cnpj: string }>();
 
+  const formConfigs: FormConfig[] = [];
+
   configs.forEach((c: any) => {
-    const key = c.cnpj || c.id; // Use CNPJ as key, fallback to id if no CNPJ
+    const key = c.cnpj || c.id;
     if (!cnpjToConfigIds.has(key)) {
       cnpjToConfigIds.set(key, []);
       cnpjToCompanyInfo.set(key, {
@@ -153,6 +161,15 @@ export function useSurveyData() {
       });
     }
     cnpjToConfigIds.get(key)!.push(c.id);
+
+    // Only track real forms (not placeholders)
+    if (c.spreadsheet_id !== "__placeholder__") {
+      formConfigs.push({
+        configId: c.id,
+        companyKey: key,
+        title: c.form_title || c.sheet_name || `Formulário ${cnpjToConfigIds.get(key)!.length}`,
+      });
+    }
   });
 
   // Map from config_id to company key (CNPJ or id)
@@ -216,6 +233,7 @@ export function useSurveyData() {
 
     return {
       id: r.id,
+      configId: r.config_id,
       companyId: configIdToCompanyKey.get(r.config_id) || r.config_id,
       name: r.respondent_name || "Anônimo",
       sex: (r.sex === "Masculino" || r.sex === "Feminino") ? r.sex : "Prefiro não declarar",
@@ -346,11 +364,16 @@ export function useSurveyData() {
     });
   }
 
+  function getFormConfigsForCompany(companyKey: string): FormConfig[] {
+    return formConfigs.filter(f => f.companyKey === companyKey);
+  }
+
   return {
     isLoading,
     hasData,
     companies,
     respondents,
+    formConfigs,
     getCompanyRespondents,
     getQuestionAverage,
     getSectionAverage,
@@ -359,5 +382,6 @@ export function useSurveyData() {
     getAvailableSections,
     getOutlierResponses,
     getSectorAverages,
+    getFormConfigsForCompany,
   };
 }

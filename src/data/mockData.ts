@@ -18,6 +18,7 @@ export interface Company {
 
 export interface Respondent {
   id: string;
+  configId?: string;
   companyId: string;
   name: string;
   sex: "Masculino" | "Feminino" | "Prefiro não declarar";
