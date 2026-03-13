@@ -16,9 +16,10 @@ import { Progress } from "@/components/ui/progress";
 
 export default function ActionPlans() {
   const { user, isCompanyUser } = useAuth();
-  const { isLoading: loadingSurvey, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections } = useSurveyData();
+  const { isLoading: loadingSurvey, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getAvailableSections, getFormConfigsForCompany } = useSurveyData();
   const { plans, tasks, isLoading: loadingPlans, createPlan, updatePlanStatus, deletePlan, createTask, updateTask, deleteTask } = useActionPlans();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [editingObs, setEditingObs] = useState<string | null>(null);
