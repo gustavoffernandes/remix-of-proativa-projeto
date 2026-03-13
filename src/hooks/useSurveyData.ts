@@ -155,7 +155,7 @@ export function useSurveyData() {
       cnpjToConfigIds.set(key, []);
       cnpjToCompanyInfo.set(key, {
         name: c.company_name,
-        sector: c.sector || "Nao informado",
+        sector: c.sector ? c.sector.charAt(0).toUpperCase() + c.sector.slice(1).toLowerCase() : "Não informado",
         employees: c.employee_count || null,
         cnpj: c.cnpj || "",
       });
@@ -238,7 +238,7 @@ export function useSurveyData() {
       name: r.respondent_name || "Anônimo",
       sex: (r.sex === "Masculino" || r.sex === "Feminino") ? r.sex : "Prefiro não declarar",
       age: r.age || 0,
-      sector: r.sector || "Não informado",
+      sector: r.sector ? r.sector.charAt(0).toUpperCase() + r.sector.slice(1).toLowerCase() : "Não informado",
       answers: formattedAnswers,
       responseTimestamp: r.response_timestamp,
     };
