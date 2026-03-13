@@ -45,7 +45,7 @@ export default function CompanyComparison() {
   });
 
   // Sector filter
-  const allSectors = [...new Set(respondents.map(r => r.sector))].sort();
+  const allSectors = uniqueSectors(respondents.map(r => r.sector));
   const filteredByAll = sectorFilter ? dateFiltered.filter(r => r.sector === sectorFilter) : dateFiltered;
 
   const selectedCompanies = companies.filter(c => effectiveSelected.includes(c.id));
