@@ -363,11 +363,16 @@ export function useSurveyData() {
     });
   }
 
+  function getFormConfigsForCompany(companyKey: string): FormConfig[] {
+    return formConfigs.filter(f => f.companyKey === companyKey);
+  }
+
   return {
     isLoading,
     hasData,
     companies,
     respondents,
+    formConfigs,
     getCompanyRespondents,
     getQuestionAverage,
     getSectionAverage,
@@ -376,5 +381,6 @@ export function useSurveyData() {
     getAvailableSections,
     getOutlierResponses,
     getSectorAverages,
+    getFormConfigsForCompany,
   };
 }
