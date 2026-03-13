@@ -9,7 +9,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, uniqueSectors } from "@/lib/utils";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
 
@@ -44,8 +44,10 @@ export default function Demographics() {
     return true;
   });
   const companyPool = effectiveCompanyFilter ? dateFiltered.filter(r => r.companyId === effectiveCompanyFilter) : dateFiltered;
-  const availableSectors = [...new Set(companyPool.map(r => r.sector))].sort();
-  const pool = sectorFilter ? companyPool.filter(r => r.sector === sectorFilter) : companyPool;
+  const availableSectors = uniqueSectors(companyPool.map(r => r.sector));
+  const pool = sectorFilter
+    ? companyPool.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : companyPool;
 
   function groupAverage(group: typeof pool, sectionId: string): number {
     const qs = questions.filter(q => q.section === sectionId);

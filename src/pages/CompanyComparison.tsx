@@ -11,7 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
-import { cn } from "@/lib/utils";
+import { cn, uniqueSectors } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
@@ -45,8 +45,10 @@ export default function CompanyComparison() {
   });
 
   // Sector filter
-  const allSectors = [...new Set(respondents.map(r => r.sector))].sort();
-  const filteredByAll = sectorFilter ? dateFiltered.filter(r => r.sector === sectorFilter) : dateFiltered;
+  const allSectors = uniqueSectors(respondents.map(r => r.sector));
+  const filteredByAll = sectorFilter
+    ? dateFiltered.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : dateFiltered;
 
   const selectedCompanies = companies.filter(c => effectiveSelected.includes(c.id));
 

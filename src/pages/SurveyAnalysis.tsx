@@ -5,7 +5,7 @@ import { FormFilter } from "@/components/dashboard/FormFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
-import { cn } from "@/lib/utils";
+import { cn, uniqueSectors } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -36,8 +36,10 @@ export default function SurveyAnalysis() {
   if (selectedFormId) {
     companyRespondents = companyRespondents.filter(r => (r as any).configId === selectedFormId);
   }
-  const availableSectors = [...new Set(companyRespondents.map(r => r.sector))].sort();
-  const filteredRespondents = sectorFilter ? companyRespondents.filter(r => r.sector === sectorFilter) : companyRespondents;
+  const availableSectors = uniqueSectors(companyRespondents.map(r => r.sector));
+  const filteredRespondents = sectorFilter
+    ? companyRespondents.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : companyRespondents;
 
   const customDistribution = (questionId: string) => {
     const pool = filteredRespondents.filter(r => r.answers[questionId] !== undefined);
