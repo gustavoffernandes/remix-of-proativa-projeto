@@ -22,6 +22,12 @@ export interface RealCompany {
   color: string;
 }
 
+export interface FormConfig {
+  configId: string;
+  companyKey: string;
+  title: string;
+}
+
 const COMPANY_COLORS = [
   "hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)",
   "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)",
