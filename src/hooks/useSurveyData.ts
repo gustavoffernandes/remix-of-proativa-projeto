@@ -233,6 +233,7 @@ export function useSurveyData() {
 
     return {
       id: r.id,
+      configId: r.config_id,
       companyId: configIdToCompanyKey.get(r.config_id) || r.config_id,
       name: r.respondent_name || "Anônimo",
       sex: (r.sex === "Masculino" || r.sex === "Feminino") ? r.sex : "Prefiro não declarar",
