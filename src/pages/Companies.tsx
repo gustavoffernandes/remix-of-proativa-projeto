@@ -47,16 +47,32 @@ export default function Companies() {
 
   // Group configs by CNPJ to build company list
   const companies: CompanyEntry[] = [];
-  const cnpjMap = new Map<string, { name: string; sector: string; employee_count: number | null; count: number }>();
+  const cnpjMap = new Map<string, { name: string; sector: string; employee_count: number | null; count: number; priority: 0 | 1 }>();
 
   configs.forEach((c: any) => {
     const cnpj = c.cnpj || "";
     if (!cnpj) return;
     const isPlaceholder = c.spreadsheet_id === "__placeholder__";
+    const priority: 0 | 1 = isPlaceholder ? 0 : 1;
+
     if (cnpjMap.has(cnpj)) {
-      if (!isPlaceholder) cnpjMap.get(cnpj)!.count++;
+      const current = cnpjMap.get(cnpj)!;
+      if (!isPlaceholder) current.count++;
+
+      if (priority > current.priority) {
+        current.name = c.company_name || current.name;
+        current.sector = c.sector || current.sector;
+        current.employee_count = c.employee_count || current.employee_count;
+        current.priority = priority;
+      }
     } else {
-      cnpjMap.set(cnpj, { name: c.company_name, sector: c.sector || "", employee_count: c.employee_count || null, count: isPlaceholder ? 0 : 1 });
+      cnpjMap.set(cnpj, {
+        name: c.company_name,
+        sector: c.sector || "",
+        employee_count: c.employee_count || null,
+        count: isPlaceholder ? 0 : 1,
+        priority,
+      });
     }
   });
 
