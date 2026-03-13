@@ -5,7 +5,7 @@ import { FormFilter } from "@/components/dashboard/FormFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
-import { cn } from "@/lib/utils";
+import { cn, uniqueSectors } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
