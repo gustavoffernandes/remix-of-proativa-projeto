@@ -147,8 +147,10 @@ export function useSurveyData() {
   const cnpjToConfigIds = new Map<string, string[]>();
   const cnpjToCompanyInfo = new Map<string, { name: string; sector: string; employees: number | null; cnpj: string }>();
 
+  const formConfigs: FormConfig[] = [];
+
   configs.forEach((c: any) => {
-    const key = c.cnpj || c.id; // Use CNPJ as key, fallback to id if no CNPJ
+    const key = c.cnpj || c.id;
     if (!cnpjToConfigIds.has(key)) {
       cnpjToConfigIds.set(key, []);
       cnpjToCompanyInfo.set(key, {
@@ -159,6 +161,15 @@ export function useSurveyData() {
       });
     }
     cnpjToConfigIds.get(key)!.push(c.id);
+
+    // Only track real forms (not placeholders)
+    if (c.spreadsheet_id !== "__placeholder__") {
+      formConfigs.push({
+        configId: c.id,
+        companyKey: key,
+        title: c.form_title || c.sheet_name || `Formulário ${cnpjToConfigIds.get(key)!.length}`,
+      });
+    }
   });
 
   // Map from config_id to company key (CNPJ or id)
