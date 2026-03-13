@@ -238,7 +238,7 @@ export function useSurveyData() {
       name: r.respondent_name || "Anônimo",
       sex: (r.sex === "Masculino" || r.sex === "Feminino") ? r.sex : "Prefiro não declarar",
       age: r.age || 0,
-      sector: r.sector || "Não informado",
+      sector: r.sector ? r.sector.charAt(0).toUpperCase() + r.sector.slice(1).toLowerCase() : "Não informado",
       answers: formattedAnswers,
       responseTimestamp: r.response_timestamp,
     };
