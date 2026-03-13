@@ -99,7 +99,7 @@ function getClassification(value: number, type: "positive" | "negative" = "posit
   return { label: "Risco Alto", color: COLORS.danger };
 }
 
-export function exportCompanyPDF(companyId: string, data: PDFExportData) {
+export function exportCompanyPDF(companyId: string, data: PDFExportData, formName?: string) {
   const company = data.companies.find(c => c.id === companyId);
   if (!company) return;
 
@@ -123,6 +123,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData) {
 
   const infoData = [
     ["Empresa", company.name],
+    ["Formulario", removeDiacritics(formName || "Todos os formularios")],
     ["Setor", company.sector || "Nao informado"],
     ["No de Funcionarios", String(company.employees || "N/A")],
     ["Questionarios Preenchidos", String(pool.length)],
