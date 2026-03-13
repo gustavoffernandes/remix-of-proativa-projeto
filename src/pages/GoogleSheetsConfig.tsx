@@ -99,7 +99,7 @@ export default function GoogleSheetsConfig() {
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });
       setShowForm(false);
-      setFormData({ company_cnpj: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
+      setFormData({ company_cnpj: "", form_title: "", spreadsheet_id: "", sheet_name: "Form Responses 1", form_url: "" });
       toast({ title: "Formulário adicionado!" });
     },
     onError: (e: Error) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
