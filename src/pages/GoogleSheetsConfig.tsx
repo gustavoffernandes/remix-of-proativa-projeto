@@ -122,18 +122,35 @@ export default function GoogleSheetsConfig() {
     mutationFn: async (configId: string) => {
       const { data, error } = await supabase.functions.invoke("sync-google-sheets", { body: { config_id: configId } });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: async (data, configId) => {
-      // Also update last_sync_at from client side as fallback
-      await supabase
+      const syncedAt = data?.synced_at || new Date().toISOString();
+
+      const { error: updateSyncError } = await supabase
         .from("google_forms_config")
-        .update({ last_sync_at: new Date().toISOString() } as any)
+        .update({ last_sync_at: syncedAt } as any)
         .eq("id", configId);
+
+      if (updateSyncError) {
+        console.error("Falha ao atualizar last_sync_at no cliente:", updateSyncError.message);
+      }
+
+      queryClient.setQueryData(["google-forms-config-all"], (prev: FormConfig[] | undefined) => {
+        if (!prev) return prev;
+        return prev.map((cfg) => (cfg.id === configId ? { ...cfg, last_sync_at: syncedAt } : cfg));
+      });
+
       queryClient.invalidateQueries({ queryKey: ["survey-responses"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });
-      toast({ title: "Sincronização concluída!", description: `${data?.rows_synced || 0} respostas sincronizadas.` });
+      queryClient.invalidateQueries({ queryKey: ["google-forms-last-sync-fallback"] });
+
+      toast({
+        title: "Sincronização concluída!",
+        description: `${data?.rows_synced || 0} respostas sincronizadas.`,
+      });
     },
     onError: (e: Error) => toast({ title: "Erro na sincronização", description: e.message, variant: "destructive" }),
   });
