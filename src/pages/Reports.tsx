@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
@@ -32,8 +33,9 @@ function RiskBadge({ value, type }: { value: number; type: "positive" | "negativ
 export default function Reports() {
   const { isCompanyUser } = useAuth();
   const surveyData = useSurveyData();
-  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages } = surveyData;
+  const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getOutlierResponses, getSectorAverages, getFormConfigsForCompany } = surveyData;
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareSector, setCompareSector] = useState<string>("");
@@ -44,7 +46,9 @@ export default function Reports() {
 
   const effectiveCompany = selectedCompany || companies[0]?.id || "";
   const effectiveCompareIds = compareIds.length > 0 ? compareIds : companies.map(c => c.id);
-  const pool = getCompanyRespondents(effectiveCompany);
+  const companyForms = getFormConfigsForCompany(effectiveCompany);
+  let pool = getCompanyRespondents(effectiveCompany);
+  if (selectedFormId) pool = pool.filter((r: any) => r.configId === selectedFormId);
   const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
   const exportData = { companies, sections: availableSections.length > 0 ? availableSections : sections, questions, respondents, getCompanyRespondents, getSectionAverage, getQuestionAverage, getAnswerDistribution, getAvailableSections, getAvailableQuestions };
