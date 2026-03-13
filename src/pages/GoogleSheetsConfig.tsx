@@ -41,6 +41,31 @@ export default function GoogleSheetsConfig() {
     },
   });
 
+  // Fallback: latest successful sync time from logs (used when last_sync_at is null)
+  const { data: lastSyncByConfig = {} } = useQuery({
+    queryKey: ["google-forms-last-sync-fallback"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("sync_logs") as any)
+        .select("config_id, finished_at")
+        .eq("status", "success")
+        .not("config_id", "is", null)
+        .not("finished_at", "is", null)
+        .order("finished_at", { ascending: false });
+
+      if (error) throw error;
+
+      const map: Record<string, string> = {};
+      ((data || []) as Array<{ config_id: string | null; finished_at: string | null }>).forEach((row) => {
+        if (row.config_id && row.finished_at && !map[row.config_id]) {
+          map[row.config_id] = row.finished_at;
+        }
+      });
+
+      return map;
+    },
+    staleTime: 30_000,
+  });
+
   // Active form configs (exclude placeholders)
   const configs = allConfigs.filter(c => c.spreadsheet_id !== "__placeholder__");
 
