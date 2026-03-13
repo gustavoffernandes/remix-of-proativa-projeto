@@ -41,6 +41,31 @@ export default function GoogleSheetsConfig() {
     },
   });
 
+  // Fallback: latest successful sync time from logs (used when last_sync_at is null)
+  const { data: lastSyncByConfig = {} } = useQuery({
+    queryKey: ["google-forms-last-sync-fallback"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("sync_logs") as any)
+        .select("config_id, finished_at")
+        .eq("status", "success")
+        .not("config_id", "is", null)
+        .not("finished_at", "is", null)
+        .order("finished_at", { ascending: false });
+
+      if (error) throw error;
+
+      const map: Record<string, string> = {};
+      ((data || []) as Array<{ config_id: string | null; finished_at: string | null }>).forEach((row) => {
+        if (row.config_id && row.finished_at && !map[row.config_id]) {
+          map[row.config_id] = row.finished_at;
+        }
+      });
+
+      return map;
+    },
+    staleTime: 30_000,
+  });
+
   // Active form configs (exclude placeholders)
   const configs = allConfigs.filter(c => c.spreadsheet_id !== "__placeholder__");
 
@@ -97,18 +122,35 @@ export default function GoogleSheetsConfig() {
     mutationFn: async (configId: string) => {
       const { data, error } = await supabase.functions.invoke("sync-google-sheets", { body: { config_id: configId } });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: async (data, configId) => {
-      // Also update last_sync_at from client side as fallback
-      await supabase
+      const syncedAt = data?.synced_at || new Date().toISOString();
+
+      const { error: updateSyncError } = await supabase
         .from("google_forms_config")
-        .update({ last_sync_at: new Date().toISOString() } as any)
+        .update({ last_sync_at: syncedAt } as any)
         .eq("id", configId);
+
+      if (updateSyncError) {
+        console.error("Falha ao atualizar last_sync_at no cliente:", updateSyncError.message);
+      }
+
+      queryClient.setQueryData(["google-forms-config-all"], (prev: FormConfig[] | undefined) => {
+        if (!prev) return prev;
+        return prev.map((cfg) => (cfg.id === configId ? { ...cfg, last_sync_at: syncedAt } : cfg));
+      });
+
       queryClient.invalidateQueries({ queryKey: ["survey-responses"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config"] });
       queryClient.invalidateQueries({ queryKey: ["google-forms-config-all"] });
-      toast({ title: "Sincronização concluída!", description: `${data?.rows_synced || 0} respostas sincronizadas.` });
+      queryClient.invalidateQueries({ queryKey: ["google-forms-last-sync-fallback"] });
+
+      toast({
+        title: "Sincronização concluída!",
+        description: `${data?.rows_synced || 0} respostas sincronizadas.`,
+      });
     },
     onError: (e: Error) => toast({ title: "Erro na sincronização", description: e.message, variant: "destructive" }),
   });
@@ -190,37 +232,40 @@ export default function GoogleSheetsConfig() {
           <div className="rounded-xl border border-border bg-card p-8 text-center"><Link2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" /><p className="text-sm text-muted-foreground">Nenhum formulário configurado.</p></div>
         ) : (
           <div className="space-y-3">
-            {configs.map(config => (
-              <div key={config.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
-                      {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
+            {configs.map((config) => {
+              const effectiveLastSyncAt = config.last_sync_at || lastSyncByConfig[config.id] || null;
+
+              return (
+                <div key={config.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-card-foreground truncate">{config.company_name}</h3>
+                        {config.is_active ? <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" /> Ativa</span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Inativa</span>}
+                      </div>
+                      {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}
+                      <p className="text-xs text-muted-foreground truncate">Planilha: {config.spreadsheet_id}</p>
+                      <p className="text-xs text-muted-foreground truncate">Aba: {config.sheet_name}</p>
+                      {effectiveLastSyncAt ? (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" />
+                          Última sincronização: {new Date(effectiveLastSyncAt).toLocaleDateString("pt-BR")} às {new Date(effectiveLastSyncAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" /> Ainda não sincronizado
+                        </p>
+                      )}
                     </div>
-                    {config.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {formatCNPJ(config.cnpj)}</p>}
-                    <p className="text-xs text-muted-foreground truncate">Planilha: {config.spreadsheet_id}</p>
-                    <p className="text-xs text-muted-foreground truncate">Aba: {config.sheet_name}</p>
-                    {config.last_sync_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />
-                        Última sincronização: {new Date(config.last_sync_at).toLocaleDateString("pt-BR")} às {new Date(config.last_sync_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                      </p>
-                    )}
-                    {!config.last_sync_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" /> Ainda não sincronizado
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {config.form_url && <a href={config.form_url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><ExternalLink className="h-4 w-4" /></a>}
-                    <button onClick={() => syncConfig.mutate(config.id)} disabled={syncConfig.isPending} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{syncConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sincronizar</button>
-                    <button onClick={() => { if (confirm("Tem certeza?")) deleteConfig.mutate(config.id); }} className="rounded-lg border border-destructive/30 p-2 text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {config.form_url && <a href={config.form_url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><ExternalLink className="h-4 w-4" /></a>}
+                      <button onClick={() => syncConfig.mutate(config.id)} disabled={syncConfig.isPending} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">{syncConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sincronizar</button>
+                      <button onClick={() => { if (confirm("Tem certeza?")) deleteConfig.mutate(config.id); }} className="rounded-lg border border-destructive/30 p-2 text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

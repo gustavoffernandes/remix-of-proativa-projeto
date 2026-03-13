@@ -57,15 +57,23 @@ Deno.serve(async (req) => {
     const rows = sheetsData.values || [];
 
     if (rows.length < 2) {
+      const syncedAt = new Date().toISOString();
+
+      await supabase
+        .from("google_forms_config")
+        .update({ last_sync_at: syncedAt })
+        .eq("id", config_id);
+
       // Update sync log
       if (syncLog) {
         await supabase
           .from("sync_logs")
-          .update({ status: "success", finished_at: new Date().toISOString(), rows_synced: 0 })
+          .update({ status: "success", finished_at: syncedAt, rows_synced: 0 })
           .eq("id", syncLog.id);
       }
+
       return new Response(
-        JSON.stringify({ rows_synced: 0, message: "Nenhuma resposta encontrada" }),
+        JSON.stringify({ rows_synced: 0, synced_at: syncedAt, message: "Nenhuma resposta encontrada" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -119,22 +127,24 @@ Deno.serve(async (req) => {
       totalSynced += batch.length;
     }
 
+    const syncedAt = new Date().toISOString();
+
     // Update config last_sync_at
     await supabase
       .from("google_forms_config")
-      .update({ last_sync_at: new Date().toISOString() })
+      .update({ last_sync_at: syncedAt })
       .eq("id", config_id);
 
     // Update sync log
     if (syncLog) {
       await supabase
         .from("sync_logs")
-        .update({ status: "success", finished_at: new Date().toISOString(), rows_synced: totalSynced })
+        .update({ status: "success", finished_at: syncedAt, rows_synced: totalSynced })
         .eq("id", syncLog.id);
     }
 
     return new Response(
-      JSON.stringify({ rows_synced: totalSynced }),
+      JSON.stringify({ rows_synced: totalSynced, synced_at: syncedAt }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
