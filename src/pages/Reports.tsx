@@ -44,9 +44,7 @@ export default function Reports() {
 
   const effectiveCompany = selectedCompany || companies[0]?.id || "";
   const effectiveCompareIds = compareIds.length > 0 ? compareIds : companies.map(c => c.id);
-  const companyForms = getFormConfigsForCompany(effectiveCompany);
-  let pool = getCompanyRespondents(effectiveCompany);
-  if (selectedFormId) pool = pool.filter(r => r.configId === selectedFormId);
+  const pool = getCompanyRespondents(effectiveCompany);
   const toggleCompare = (id: string) => { const current = effectiveCompareIds; setCompareIds(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
   const exportData = { companies, sections: availableSections.length > 0 ? availableSections : sections, questions, respondents, getCompanyRespondents, getSectionAverage, getQuestionAverage, getAnswerDistribution, getAvailableSections, getAvailableQuestions };
