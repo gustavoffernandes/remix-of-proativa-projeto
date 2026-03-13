@@ -47,6 +47,9 @@ export default function Reports() {
   const effectiveCompany = selectedCompany || companies[0]?.id || "";
   const effectiveCompareIds = compareIds.length > 0 ? compareIds : companies.map(c => c.id);
   const companyForms = getFormConfigsForCompany(effectiveCompany);
+  const selectedFormName = selectedFormId
+    ? companyForms.find((form) => form.configId === selectedFormId)?.title || "Formulário selecionado"
+    : "Todos os formulários";
 
   const getReportPoolByCompany = (companyId: string) => {
     const companyPool = getCompanyRespondents(companyId);
