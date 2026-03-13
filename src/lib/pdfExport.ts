@@ -123,6 +123,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
 
   const infoData = [
     ["Empresa", company.name],
+    ["Formulario", removeDiacritics(formName || "Todos os formularios")],
     ["Setor", company.sector || "Nao informado"],
     ["No de Funcionarios", String(company.employees || "N/A")],
     ["Questionarios Preenchidos", String(pool.length)],
