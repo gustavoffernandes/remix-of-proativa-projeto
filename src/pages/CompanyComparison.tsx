@@ -46,7 +46,9 @@ export default function CompanyComparison() {
 
   // Sector filter
   const allSectors = uniqueSectors(respondents.map(r => r.sector));
-  const filteredByAll = sectorFilter ? dateFiltered.filter(r => r.sector === sectorFilter) : dateFiltered;
+  const filteredByAll = sectorFilter
+    ? dateFiltered.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : dateFiltered;
 
   const selectedCompanies = companies.filter(c => effectiveSelected.includes(c.id));
 

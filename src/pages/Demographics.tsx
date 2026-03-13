@@ -45,7 +45,9 @@ export default function Demographics() {
   });
   const companyPool = effectiveCompanyFilter ? dateFiltered.filter(r => r.companyId === effectiveCompanyFilter) : dateFiltered;
   const availableSectors = uniqueSectors(companyPool.map(r => r.sector));
-  const pool = sectorFilter ? companyPool.filter(r => r.sector === sectorFilter) : companyPool;
+  const pool = sectorFilter
+    ? companyPool.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : companyPool;
 
   function groupAverage(group: typeof pool, sectionId: string): number {
     const qs = questions.filter(q => q.section === sectionId);

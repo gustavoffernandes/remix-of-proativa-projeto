@@ -37,7 +37,9 @@ export default function SurveyAnalysis() {
     companyRespondents = companyRespondents.filter(r => (r as any).configId === selectedFormId);
   }
   const availableSectors = uniqueSectors(companyRespondents.map(r => r.sector));
-  const filteredRespondents = sectorFilter ? companyRespondents.filter(r => r.sector === sectorFilter) : companyRespondents;
+  const filteredRespondents = sectorFilter
+    ? companyRespondents.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
+    : companyRespondents;
 
   const customDistribution = (questionId: string) => {
     const pool = filteredRespondents.filter(r => r.answers[questionId] !== undefined);
