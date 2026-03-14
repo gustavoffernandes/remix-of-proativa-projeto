@@ -11,7 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer,
 } from "recharts";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
@@ -23,7 +23,7 @@ export default function SurveyAnalysis() {
   const selectedCompany = filters.company || undefined;
   const selectedFormId = filters.form;
   const sectorFilter = filters.sector;
-  const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getQuestionAverage, getFormConfigsForCompany } = useSurveyData();
+  const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getFormConfigsForCompany } = useSurveyData();
 
   const availableSections = getAvailableSections();
   const availableQuestions = getAvailableQuestions();
@@ -31,10 +31,8 @@ export default function SurveyAnalysis() {
 
   const effectiveCompany = isCompanyUser && companies.length === 1 ? companies[0].id : selectedCompany;
 
-  // Forms for the selected company
   const companyForms = effectiveCompany ? getFormConfigsForCompany(effectiveCompany) : [];
 
-  // Filter respondents by company, form, and sector
   let companyRespondents = effectiveCompany ? respondents.filter(r => r.companyId === effectiveCompany) : respondents;
   if (selectedFormId) {
     companyRespondents = companyRespondents.filter(r => (r as any).configId === selectedFormId);
@@ -63,62 +61,73 @@ export default function SurveyAnalysis() {
     return { subject: s.shortName, média: Math.round(avg * 100) / 100 };
   });
 
-  if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
-  if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível. {!isCompanyUser && <a href="/integracoes" className="text-primary underline">Sincronize dados</a>} primeiro.</p></div></DashboardLayout>;
+  if (isLoading) return <PageSkeleton />;
+  if (!hasData) return (
+    <DashboardLayout>
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <p className="text-sm text-muted-foreground">
+          Nenhum dado disponível.{" "}
+          {!isCompanyUser && <a href="/integracoes" className="text-primary underline">Sincronize dados</a>} primeiro.
+        </p>
+      </div>
+    </DashboardLayout>
+  );
 
   return (
     <DashboardLayout>
-      <div className="animate-fade-in space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Análise por Pergunta</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visualize a distribuição de respostas para cada item</p>
-        </div>
+      <ErrorBoundary>
+        <div className="animate-fade-in space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Análise por Pergunta</h1>
+            <p className="text-sm text-muted-foreground mt-1">Visualize a distribuição de respostas para cada item</p>
+          </div>
 
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-          <div className="flex flex-wrap gap-2">
-            {availableSections.map((s) => (
-              <button key={s.id} onClick={() => setActiveSection(s.id)}
-                className={cn("rounded-lg px-4 py-2 text-sm font-medium transition-all", activeSection === s.id ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}>
-                {s.shortName}
-              </button>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
+              {availableSections.map((s) => (
+                <button key={s.id} onClick={() => setActiveSection(s.id)}
+                  className={cn("rounded-lg px-4 py-2 text-sm font-medium transition-all", activeSection === s.id ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}>
+                  {s.shortName}
+                </button>
+              ))}
+            </div>
+            {!isCompanyUser && (
+              <select value={selectedCompany || ""} onChange={(e) => { setFilter("company", e.target.value); setFilter("sector", ""); setFilter("form", ""); }}
+                className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+                <option value="">Todas as empresas</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setFilter("form", id); setFilter("sector", ""); }} />
+            <select value={sectorFilter} onChange={(e) => setFilter("sector", e.target.value)}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <option value="">Todos os setores</option>
+              {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <h3 className="mb-3 text-sm font-semibold text-card-foreground">Radar Geral</h3>
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
+                  <Radar dataKey="média" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {sectionQuestions.map((q) => (
+              <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId ? customDistribution : getAnswerDistribution} />
             ))}
           </div>
-          {!isCompanyUser && (
-            <select value={selectedCompany || ""} onChange={(e) => { setSelectedCompany(e.target.value || undefined); setSectorFilter(""); setSelectedFormId(""); }}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-              <option value="">Todas as empresas</option>
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )}
-          <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setSelectedFormId(id); setSectorFilter(""); }} />
-          <select value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-            <option value="">Todos os setores</option>
-            {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}
         </div>
-
-        <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-          <h3 className="mb-3 text-sm font-semibold text-card-foreground">Radar Geral</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
-                <Radar dataKey="média" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {sectionQuestions.map((q) => (
-            <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId ? customDistribution : getAnswerDistribution} />
-          ))}
-        </div>
-        {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}
-      </div>
+      </ErrorBoundary>
     </DashboardLayout>
   );
 }
