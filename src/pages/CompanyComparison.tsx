@@ -123,6 +123,7 @@ export default function CompanyComparison() {
 
   return (
     <DashboardLayout>
+      <ErrorBoundary>
       <div className="animate-fade-in space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Comparação</h1>
