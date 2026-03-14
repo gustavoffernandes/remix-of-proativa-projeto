@@ -4,6 +4,8 @@ import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
 } from "@/lib/proartMethodology";
@@ -12,7 +14,6 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { cn, uniqueSectors } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
 
