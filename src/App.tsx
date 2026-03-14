@@ -22,7 +22,14 @@ import ActionPlans from "./pages/ActionPlans";
 import TemporalEvolution from "./pages/TemporalEvolution";
 import Companies from "./pages/Companies";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,23 +38,25 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/analise" element={<ProtectedRoute><SurveyAnalysis /></ProtectedRoute>} />
-            <Route path="/empresas" element={<ProtectedRoute><CompanyComparison /></ProtectedRoute>} />
-            <Route path="/demografico" element={<ProtectedRoute><Demographics /></ProtectedRoute>} />
-            <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
-            <Route path="/evolucao" element={<ProtectedRoute><TemporalEvolution /></ProtectedRoute>} />
-            <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/empresas-cadastro" element={<ProtectedRoute requireAdmin><Companies /></ProtectedRoute>} />
-            <Route path="/integracoes" element={<ProtectedRoute requireAdmin><GoogleSheetsConfig /></ProtectedRoute>} />
-            <Route path="/notas" element={<ProtectedRoute><CompanyNotes /></ProtectedRoute>} />
-            <Route path="/plano-acao" element={<ProtectedRoute><ActionPlans /></ProtectedRoute>} />
-            <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/analise" element={<ProtectedRoute><SurveyAnalysis /></ProtectedRoute>} />
+              <Route path="/empresas" element={<ProtectedRoute><CompanyComparison /></ProtectedRoute>} />
+              <Route path="/demografico" element={<ProtectedRoute><Demographics /></ProtectedRoute>} />
+              <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
+              <Route path="/evolucao" element={<ProtectedRoute><TemporalEvolution /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/empresas-cadastro" element={<ProtectedRoute requireAdmin><Companies /></ProtectedRoute>} />
+              <Route path="/integracoes" element={<ProtectedRoute requireAdmin><GoogleSheetsConfig /></ProtectedRoute>} />
+              <Route path="/notas" element={<ProtectedRoute><CompanyNotes /></ProtectedRoute>} />
+              <Route path="/plano-acao" element={<ProtectedRoute><ActionPlans /></ProtectedRoute>} />
+              <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

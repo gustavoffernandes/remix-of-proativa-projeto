@@ -6,7 +6,9 @@ import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
 import { cn, uniqueSectors } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Legend,
@@ -17,9 +19,10 @@ const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)",
 export default function SurveyAnalysis() {
   const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
-  const [selectedCompany, setSelectedCompany] = useState<string | undefined>(undefined);
-  const [selectedFormId, setSelectedFormId] = useState<string>("");
-  const [sectorFilter, setSectorFilter] = useState<string>("");
+  const { filters, setFilter } = useUrlFilters({ company: "", form: "", sector: "" });
+  const selectedCompany = filters.company || undefined;
+  const selectedFormId = filters.form;
+  const sectorFilter = filters.sector;
   const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getQuestionAverage, getFormConfigsForCompany } = useSurveyData();
 
   const availableSections = getAvailableSections();
