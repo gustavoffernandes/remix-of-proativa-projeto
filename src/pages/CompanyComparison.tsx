@@ -4,6 +4,8 @@ import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions, sections } from "@/data/mockData";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
 } from "@/lib/proartMethodology";
@@ -12,7 +14,6 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { cn, uniqueSectors } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
 
@@ -31,7 +32,7 @@ export default function CompanyComparison() {
   const effectiveSelected = selected.length > 0 ? selected : companies.map(c => c.id);
   const toggle = (id: string) => { const current = effectiveSelected; setSelected(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
 
-  if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
+  if (isLoading) return <PageSkeleton />;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
 
   // Date filter
@@ -122,6 +123,7 @@ export default function CompanyComparison() {
 
   return (
     <DashboardLayout>
+      <ErrorBoundary>
       <div className="animate-fade-in space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Comparação</h1>
@@ -402,6 +404,7 @@ export default function CompanyComparison() {
           </>
         )}
       </div>
+      </ErrorBoundary>
     </DashboardLayout>
   );
 }

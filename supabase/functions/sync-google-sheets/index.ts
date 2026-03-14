@@ -104,13 +104,28 @@ Deno.serve(async (req) => {
         }
       });
 
+      // Normalize sector and sex values for consistent deduplication
+      const rawSector = sectorCol >= 0 ? row[sectorCol] || null : null;
+      const normalizedSector = rawSector
+        ? rawSector.trim().charAt(0).toUpperCase() + rawSector.trim().slice(1).toLowerCase()
+        : null;
+
+      const rawSex = sexCol >= 0 ? row[sexCol] || null : null;
+      const normalizeSex = (v: string | null) => {
+        if (!v) return null;
+        const lower = v.trim().toLowerCase();
+        if (lower === "masculino" || lower === "m" || lower === "masc") return "Masculino";
+        if (lower === "feminino" || lower === "f" || lower === "fem") return "Feminino";
+        return "Prefiro não declarar";
+      };
+
       return {
         config_id,
         response_timestamp: timestampCol >= 0 && row[timestampCol] ? parseTimestamp(row[timestampCol]) : null,
         respondent_name: nameCol >= 0 ? row[nameCol] || null : null,
         age: ageCol >= 0 ? parseAge(row[ageCol]) : null,
-        sex: sexCol >= 0 ? row[sexCol] || null : null,
-        sector: sectorCol >= 0 ? row[sectorCol] || null : null,
+        sex: normalizeSex(rawSex),
+        sector: normalizedSector,
         answers,
       };
     });
@@ -142,6 +157,17 @@ Deno.serve(async (req) => {
         .update({ status: "success", finished_at: syncedAt, rows_synced: totalSynced })
         .eq("id", syncLog.id);
     }
+
+    // Audit log for sync
+    try {
+      await supabase.from("audit_logs").insert({
+        actor_user_id: null,
+        action: "sync_google_sheets",
+        target_type: "google_forms_config",
+        target_id: config_id,
+        details: { rows_synced: totalSynced, synced_at: syncedAt },
+      });
+    } catch (_) { /* non-blocking */ }
 
     return new Response(
       JSON.stringify({ rows_synced: totalSynced, synced_at: syncedAt }),

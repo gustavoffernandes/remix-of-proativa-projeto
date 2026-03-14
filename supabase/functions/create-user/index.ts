@@ -110,6 +110,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Audit log: record the user creation event
+    try {
+      await adminClient.from("audit_logs").insert({
+        actor_user_id: callerUser.id,
+        action: "create_user",
+        target_type: "auth.user",
+        target_id: data.user.id,
+        details: { email, role, company_id: role === "company_user" ? company_id : null },
+      });
+    } catch (_auditError) {
+      // Non-blocking: log failure silently — user was already created
+      console.warn("Audit log insert failed:", _auditError);
+    }
+
     return new Response(
       JSON.stringify({ success: true, user: { id: data.user.id, email: data.user.email, role, company_id: role === "company_user" ? company_id : null } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

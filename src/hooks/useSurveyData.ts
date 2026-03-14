@@ -127,6 +127,8 @@ export function useSurveyData() {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000,   // 15 minutes
   });
 
   const { data: rawResponses = [], isLoading: loadingResponses } = useQuery({
@@ -138,6 +140,8 @@ export function useSurveyData() {
       if (error) throw error;
       return (data || []) as SurveyResponse[];
     },
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    gcTime: 10 * 60 * 1000,   // 10 minutes
   });
 
   const isLoading = loadingConfigs || loadingResponses;
