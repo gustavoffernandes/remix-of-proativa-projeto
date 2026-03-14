@@ -404,6 +404,7 @@ export default function CompanyComparison() {
           </>
         )}
       </div>
+      </ErrorBoundary>
     </DashboardLayout>
   );
 }
