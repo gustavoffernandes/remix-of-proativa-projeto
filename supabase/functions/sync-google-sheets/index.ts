@@ -158,6 +158,17 @@ Deno.serve(async (req) => {
         .eq("id", syncLog.id);
     }
 
+    // Audit log for sync
+    try {
+      await supabase.from("audit_logs").insert({
+        actor_user_id: null,
+        action: "sync_google_sheets",
+        target_type: "google_forms_config",
+        target_id: config_id,
+        details: { rows_synced: totalSynced, synced_at: syncedAt },
+      });
+    } catch (_) { /* non-blocking */ }
+
     return new Response(
       JSON.stringify({ rows_synced: totalSynced, synced_at: syncedAt }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
