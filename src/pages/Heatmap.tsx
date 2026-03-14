@@ -7,7 +7,8 @@ import { FormFilter } from "@/components/dashboard/FormFilter";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Heatmap() {
   const { isCompanyUser } = useAuth();
