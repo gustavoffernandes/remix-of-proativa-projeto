@@ -27,7 +27,7 @@ export default function Heatmap() {
       ? formConfigs
       : [];
 
-  if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
+  if (isLoading) return <PageSkeleton />;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
 
   let filteredRespondents = respondents.filter(r => {
