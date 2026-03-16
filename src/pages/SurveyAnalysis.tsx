@@ -122,7 +122,7 @@ export default function SurveyAnalysis() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {sectionQuestions.map((q) => (
-              <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId ? customDistribution : getAnswerDistribution} />
+              <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId || effectiveCompany ? customDistribution : getAnswerDistribution} />
             ))}
           </div>
           {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}
