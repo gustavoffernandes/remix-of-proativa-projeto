@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
+import { useActionPlans } from "@/hooks/useActionPlans";
 import { FormFilter } from "@/components/dashboard/FormFilter";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
   calculatePxS, getPRLevelLabel, getPRLevelColor, getPRLevelBgColor, PXS_MATRIX, getMatrixCellPR,
 } from "@/lib/proartMethodology";
-import { Download, FileText, Building2, GitCompareArrows, Database, FileDown, Loader2, AlertOctagon, Target } from "lucide-react";
+import { Download, FileText, Building2, GitCompareArrows, Database, FileDown, Loader2, AlertOctagon, Target, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import {
