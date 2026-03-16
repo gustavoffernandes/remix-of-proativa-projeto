@@ -400,6 +400,73 @@ export default function Reports() {
           )}
         </div>
 
+        {/* Planos de Ação */}
+        {(() => {
+          // Filter plans for the selected company (by config_id match to company key)
+          const companyConfigIds = surveyData.getFormConfigsForCompany(effectiveCompany).map(f => f.configId);
+          // Also match by company cnpj stored in company_config_id
+          const companyPlans = plans.filter(p =>
+            companyConfigIds.includes(p.company_config_id) ||
+            p.company_config_id === effectiveCompany
+          );
+          return (
+            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <h3 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-primary" /> Planos de Ação Gerados
+              </h3>
+              {companyPlans.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <ClipboardList className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">Nenhum plano de ação foi gerado para esta empresa.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Acesse a página <strong>Planos de Ação</strong> para gerar planos baseados nos fatores de risco.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {companyPlans.map(plan => {
+                    const planTasks = tasks.filter(t => t.action_plan_id === plan.id);
+                    const completedTasks = planTasks.filter(t => t.is_completed).length;
+                    const factor = ALL_FACTORS.find(f => f.id === plan.factor_id);
+                    return (
+                      <div key={plan.id} className="rounded-lg border border-border p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{plan.title}</p>
+                            <p className="text-xs text-muted-foreground">{plan.description}</p>
+                          </div>
+                          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                            plan.status === "completed" ? "bg-success/10 text-success" :
+                            plan.status === "in_progress" ? "bg-primary/10 text-primary" :
+                            "bg-muted text-muted-foreground")}>
+                            {plan.status === "completed" ? "Concluído" : plan.status === "in_progress" ? "Em andamento" : "Pendente"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Fator: <strong className="text-foreground">{factor?.shortName || plan.factor_id}</strong></span>
+                          <span>Nível: <strong className="text-foreground">{plan.risk_level}</strong></span>
+                          <span>Tarefas: <strong className="text-foreground">{completedTasks}/{planTasks.length} concluídas</strong></span>
+                        </div>
+                        {planTasks.length > 0 && (
+                          <div className="mt-3 space-y-1">
+                            {planTasks.map(task => (
+                              <div key={task.id} className={cn("flex items-center gap-2 text-xs px-2 py-1 rounded",
+                                task.is_completed ? "bg-success/5 text-success" : "bg-muted/50 text-muted-foreground")}>
+                                <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0",
+                                  task.is_completed ? "bg-success" : "bg-muted-foreground")} />
+                                <span className={task.is_completed ? "line-through opacity-60" : ""}>{task.title}</span>
+                                {task.observation && <span className="ml-auto italic text-[10px] truncate max-w-[200px]">"{task.observation}"</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Relatório Comparativo - hide for company_user */}
         {!isCompanyUser && (
           <div className="rounded-xl border border-border bg-card p-5 shadow-card">
