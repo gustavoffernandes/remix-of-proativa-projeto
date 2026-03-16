@@ -28,6 +28,11 @@ export default function CompanyComparison() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [sectorFilter, setSectorFilter] = useState<string>("");
+  // Multi-select sectors for "Por Setor" mode
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+  // Selected factors filter for "Por Fator" mode
+  const [selectedFactors, setSelectedFactors] = useState<string[]>([]);
+
   const availableSections = getAvailableSections();
   const effectiveSelected = selected.length > 0 ? selected : companies.map(c => c.id);
   const toggle = (id: string) => { const current = effectiveSelected; setSelected(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
@@ -45,7 +50,7 @@ export default function CompanyComparison() {
     return true;
   });
 
-  // Sector filter
+  // Sector filter (global for "Por Empresa")
   const allSectors = uniqueSectors(respondents.map(r => r.sector));
   const filteredByAll = sectorFilter
     ? dateFiltered.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
@@ -82,14 +87,22 @@ export default function CompanyComparison() {
     return row;
   });
 
-  // Sector comparison
+  // Sector comparison — with multi-sector filter
   const effectiveSectorCompany = sectorCompanyId || companies[0]?.id || "";
-  const sectorAvgs = getSectorAverages(effectiveSectorCompany);
+  const allSectorAvgs = getSectorAverages(effectiveSectorCompany);
+  const sectorAvgs = selectedSectors.length > 0
+    ? allSectorAvgs.filter(sa => selectedSectors.includes(sa.sector))
+    : allSectorAvgs;
+
   const sectorChartData = displaySections.map(s => {
     const row: Record<string, string | number> = { name: s.shortName };
     sectorAvgs.forEach(sa => { row[sa.sector.substring(0, 8)] = sa.sectionAvgs[s.id] || 0; });
     return row;
   });
+
+  const toggleSector = (sector: string) => {
+    setSelectedSectors(prev => prev.includes(sector) ? prev.filter(s => s !== sector) : [...prev, sector]);
+  };
 
   // Cross-company sector comparison
   const effectiveCrossSector = crossSector || allSectors[0] || "";
@@ -110,8 +123,16 @@ export default function CompanyComparison() {
     return row;
   }) : [];
 
-  // Factor-level comparison
-  const factorData = ALL_FACTORS.map(f => {
+  // Factor-level comparison (respect selectedFactors filter)
+  const effectiveFactors = selectedFactors.length > 0
+    ? ALL_FACTORS.filter(f => selectedFactors.includes(f.id))
+    : ALL_FACTORS;
+
+  const toggleFactor = (factorId: string) => {
+    setSelectedFactors(prev => prev.includes(factorId) ? prev.filter(f => f !== factorId) : [...prev, factorId]);
+  };
+
+  const factorData = effectiveFactors.map(f => {
     const row: Record<string, string | number> = { name: f.shortName };
     selectedCompanies.forEach(c => {
       const pool = filteredByAll.filter(r => r.companyId === c.id);
@@ -139,16 +160,18 @@ export default function CompanyComparison() {
 
         {/* Global filters */}
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-          {compareMode !== "sector" && (
-            <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-              <option value="">Todos os pilares</option>
-              {availableSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+          {compareMode === "company" && (
+            <>
+              <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+                <option value="">Todos os pilares</option>
+                {availableSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <select value={sectorFilter} onChange={e => setSectorFilter(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+                <option value="">Todos os setores</option>
+                {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </>
           )}
-          <select value={sectorFilter} onChange={e => setSectorFilter(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
-            <option value="">Todos os setores</option>
-            {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
           <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
         </div>
 
@@ -263,6 +286,7 @@ export default function CompanyComparison() {
 
         {compareMode === "factor" && (
           <>
+            {/* Company selector */}
             <div className="flex flex-wrap gap-2">
               {companies.map(c => {
                 const pool = filteredByAll.filter(r => r.companyId === c.id);
@@ -275,6 +299,33 @@ export default function CompanyComparison() {
                 );
               })}
             </div>
+
+            {/* Factor checkboxes — 10 fatores PROART */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-muted-foreground">Filtrar Fatores PROART</span>
+                {selectedFactors.length > 0 && (
+                  <button onClick={() => setSelectedFactors([])} className="text-xs text-muted-foreground hover:text-foreground underline">Limpar</button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ALL_FACTORS.map((f, i) => {
+                  const isSelected = selectedFactors.length === 0 || selectedFactors.includes(f.id);
+                  return (
+                    <button key={f.id} onClick={() => toggleFactor(f.id)}
+                      className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                        isSelected ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>
+                      <span className={cn("h-3 w-3 rounded-sm border flex items-center justify-center flex-shrink-0",
+                        isSelected ? "bg-primary border-primary" : "border-border")}>
+                        {isSelected && <svg className="h-2 w-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      </span>
+                      {f.shortName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <div className="rounded-xl border border-border bg-card p-5 shadow-card">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Comparação por Fator (10 Fatores PROART)</h3>
@@ -317,7 +368,7 @@ export default function CompanyComparison() {
                     <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Fator</th>
                     {selectedCompanies.map(c => <th key={c.id} className="px-3 py-2 text-center font-semibold text-muted-foreground">{c.name.split(" ")[0]}</th>)}
                   </tr></thead>
-                  <tbody>{ALL_FACTORS.map(f => {
+                  <tbody>{effectiveFactors.map(f => {
                     const scale = PROART_SCALES.find(s => s.id === f.scaleId);
                     return (
                       <tr key={f.id} className="border-b border-border/50">
@@ -344,7 +395,7 @@ export default function CompanyComparison() {
         {compareMode === "sector" && (
           <>
             <div className="flex flex-col sm:flex-row gap-3">
-              <select value={effectiveSectorCompany} onChange={e => setSectorCompanyId(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <select value={effectiveSectorCompany} onChange={e => { setSectorCompanyId(e.target.value); setSelectedSectors([]); }} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
@@ -352,6 +403,35 @@ export default function CompanyComparison() {
                 {availableSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
+
+            {/* Multi-select sector checkboxes */}
+            {allSectorAvgs.length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-muted-foreground">Filtrar Setores</span>
+                  {selectedSectors.length > 0 && (
+                    <button onClick={() => setSelectedSectors([])} className="text-xs text-muted-foreground hover:text-foreground underline">Limpar ({selectedSectors.length} selecionados)</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allSectorAvgs.map((sa, i) => {
+                    const isSelected = selectedSectors.length === 0 || selectedSectors.includes(sa.sector);
+                    return (
+                      <button key={sa.sector} onClick={() => toggleSector(sa.sector)}
+                        className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                          isSelected ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50")}>
+                        <span className={cn("h-3 w-3 rounded-sm border flex items-center justify-center flex-shrink-0",
+                          isSelected ? "bg-primary border-primary" : "border-border")}>
+                          {isSelected && <svg className="h-2 w-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        </span>
+                        {sa.sector} ({sa.count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <div className="rounded-xl border border-border bg-card p-5 shadow-card">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Setores por Pilar</h3>
