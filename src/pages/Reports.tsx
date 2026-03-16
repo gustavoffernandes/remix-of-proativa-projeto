@@ -35,6 +35,7 @@ export default function Reports() {
   const { isCompanyUser } = useAuth();
   const surveyData = useSurveyData();
   const { isLoading, hasData, companies, respondents, getSectionAverage, getCompanyRespondents, getQuestionAverage, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getFormConfigsForCompany } = surveyData;
+  const { plans, tasks } = useActionPlans();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   
