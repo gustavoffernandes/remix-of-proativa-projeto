@@ -25,11 +25,13 @@ export default function SurveyAnalysis() {
   const selectedFormId = searchParams.get("form") || "";
   const sectorFilter = searchParams.get("sector") || "";
 
-  const setParam = (key: string, value: string) => {
+  const updateParams = (updates: Record<string, string>) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      if (value === "") next.delete(key);
-      else next.set(key, value);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === "") next.delete(key);
+        else next.set(key, value);
+      });
       return next;
     }, { replace: true });
   };
@@ -104,23 +106,37 @@ export default function SurveyAnalysis() {
                 </button>
               ))}
             </div>
+            
             {!isCompanyUser && (
               <select
                 value={selectedCompany}
                 onChange={(e) => {
-                  setParam("company", e.target.value);
-                  setParam("sector", "");
-                  setParam("form", "");
+                  updateParams({
+                    company: e.target.value,
+                    sector: "",
+                    form: ""
+                  });
                 }}
                 className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="">Todas as empresas</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-            )}
-            <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setParam("form", id); setParam("sector", ""); }} />
-            <select value={sectorFilter} onChange={(e) => setParam("sector", e.target.value)}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+            )} {/* <--- THIS CLOSING BRACKET WAS MISSING */}
+
+            {/* Filtro de Formulários (FormFilter) */}
+            <FormFilter 
+              forms={companyForms} 
+              selectedFormId={selectedFormId} 
+              onChange={(id) => updateParams({ form: id, sector: "" })} 
+            />
+
+            {/* Filtro de Setores */}
+            <select 
+              value={sectorFilter} 
+              onChange={(e) => updateParams({ sector: e.target.value })}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
+            >
               <option value="">Todos os setores</option>
               {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
             </select>

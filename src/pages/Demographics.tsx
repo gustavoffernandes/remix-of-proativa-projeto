@@ -35,11 +35,13 @@ export default function Demographics() {
   const companyFilter = searchParams.get("company") || "";
   const sectorFilter = searchParams.get("sector") || "";
 
-  const setParam = (key: string, value: string) => {
+  const updateParams = (updates: Record<string, string>) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      if (value === "") next.delete(key);
-      else next.set(key, value);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === "") next.delete(key);
+        else next.set(key, value);
+      });
       return next;
     }, { replace: true });
   };
@@ -123,25 +125,44 @@ export default function Demographics() {
             <p className="text-sm text-muted-foreground mt-1">Cruzamento entre dados demográficos e percepção</p>
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+            {/* Filtro de Empresas (Apenas para não-usuários da empresa) */}
             {!isCompanyUser && (
               <select
                 value={companyFilter}
                 onChange={(e) => {
-                  setParam("company", e.target.value);
-                  setParam("sector", "");
+                  updateParams({
+                    company: e.target.value,
+                    sector: ""
+                  });
                 }}
                 className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="">Todas as empresas</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             )}
-            <select value={sectorFilter} onChange={(e) => setParam("sector", e.target.value)}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+
+            {/* Filtro de Setores (Visível para todos) */}
+            <select 
+              value={sectorFilter} 
+              onChange={(e) => updateParams({ sector: e.target.value })}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
+            >
               <option value="">Todos os setores</option>
-              {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
+              {availableSectors.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
-            <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
+
+            {/* Filtro de Data (Visível para todos) */}
+            <DateRangeFilter 
+              startDate={startDate} 
+              endDate={endDate} 
+              onStartChange={setStartDate} 
+              onEndChange={setEndDate} 
+            />
           </div>
 
           {/* Section checkboxes */}
