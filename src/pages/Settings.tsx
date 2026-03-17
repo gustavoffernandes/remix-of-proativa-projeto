@@ -96,16 +96,29 @@ export default function Settings() {
     enabled: isAdmin,
   });
 
-  // Fetch all user roles
+  // Fetch all user roles enriched with email from edge function
   const { data: userRoles = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["all-user-roles"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: roles, error } = await supabase
         .from("user_roles")
         .select("*")
         .order("role");
       if (error) throw error;
-      return (data || []) as { id: string; user_id: string; role: string; company_id: string | null }[];
+      const rolesData = (roles || []) as { id: string; user_id: string; role: string; company_id: string | null }[];
+      // Try to enrich with emails via list-users edge function
+      try {
+        const { data: usersData } = await supabase.functions.invoke("create-user", {
+          body: { action: "list" },
+        });
+        const emailMap: Record<string, string> = {};
+        if (usersData?.users) {
+          usersData.users.forEach((u: any) => { emailMap[u.id] = u.email; });
+        }
+        return rolesData.map(r => ({ ...r, email: emailMap[r.user_id] || "" }));
+      } catch {
+        return rolesData.map(r => ({ ...r, email: "" }));
+      }
     },
     enabled: isAdmin,
   });
