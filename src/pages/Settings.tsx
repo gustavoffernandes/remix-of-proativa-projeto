@@ -267,7 +267,7 @@ export default function Settings() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border bg-muted/50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">User ID</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">E-mail</th>
                             <th className="px-4 py-2.5 text-center font-semibold text-muted-foreground">Perfil</th>
                             <th className="px-4 py-2.5 text-center font-semibold text-muted-foreground">Empresa</th>
                             <th className="px-4 py-2.5 text-center font-semibold text-muted-foreground">Ações</th>
