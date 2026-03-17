@@ -25,7 +25,7 @@ export function ProativaTopbar({ onMenuClick }: TopbarProps) {
   const [showResults, setShowResults] = useState(false);
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   const searchableItems = allSearchableItems.filter(item => !item.adminOnly || isAdmin);
 
@@ -51,6 +51,16 @@ export function ProativaTopbar({ onMenuClick }: TopbarProps) {
     setQuery("");
     setShowResults(false);
   };
+
+  // Derive display name and role from user metadata
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const displayRole = user?.user_metadata?.role_label || (isAdmin ? "Administrador" : "Usuário");
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-card/80 px-4 md:px-6 backdrop-blur-md gap-3">
@@ -94,12 +104,12 @@ export function ProativaTopbar({ onMenuClick }: TopbarProps) {
 
       <div className="flex items-center gap-2 md:gap-3">
         <div className="ml-1 md:ml-2 flex items-center gap-2 md:gap-3">
-          <div className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs md:text-sm font-semibold">
-            AD
+          <div className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs md:text-sm font-semibold shrink-0">
+            {initials}
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-foreground">Admin</p>
-            <p className="text-xs text-muted-foreground">Gestor SST</p>
+            <p className="text-sm font-medium text-foreground truncate max-w-[160px]">{displayName}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[160px]">{displayRole}</p>
           </div>
         </div>
       </div>

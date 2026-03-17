@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { QuestionChart } from "@/components/dashboard/QuestionChart";
 import { FormFilter } from "@/components/dashboard/FormFilter";
@@ -8,7 +8,7 @@ import { questions } from "@/data/mockData";
 import { cn, uniqueSectors } from "@/lib/utils";
 import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useSearchParams } from "react-router-dom";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer,
@@ -19,10 +19,21 @@ const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)",
 export default function SurveyAnalysis() {
   const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
-  const { filters, setFilter } = useUrlFilters({ company: "", form: "", sector: "" });
-  const selectedCompany = filters.company || undefined;
-  const selectedFormId = filters.form;
-  const sectorFilter = filters.sector;
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedCompany = searchParams.get("company") || "";
+  const selectedFormId = searchParams.get("form") || "";
+  const sectorFilter = searchParams.get("sector") || "";
+
+  const setParam = (key: string, value: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value === "") next.delete(key);
+      else next.set(key, value);
+      return next;
+    }, { replace: true });
+  };
+
   const { isLoading, hasData, companies, respondents, getAvailableSections, getAvailableQuestions, getAnswerDistribution, getFormConfigsForCompany } = useSurveyData();
 
   const availableSections = getAvailableSections();
@@ -73,6 +84,8 @@ export default function SurveyAnalysis() {
     </DashboardLayout>
   );
 
+  const useCustomDist = !!(sectorFilter || selectedFormId || effectiveCompany);
+
   return (
     <DashboardLayout>
       <ErrorBoundary>
@@ -92,14 +105,21 @@ export default function SurveyAnalysis() {
               ))}
             </div>
             {!isCompanyUser && (
-              <select value={selectedCompany || ""} onChange={(e) => { setFilter("company", e.target.value); setFilter("sector", ""); setFilter("form", ""); }}
-                className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <select
+                value={selectedCompany}
+                onChange={(e) => {
+                  setParam("company", e.target.value);
+                  setParam("sector", "");
+                  setParam("form", "");
+                }}
+                className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
+              >
                 <option value="">Todas as empresas</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             )}
-            <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setFilter("form", id); setFilter("sector", ""); }} />
-            <select value={sectorFilter} onChange={(e) => setFilter("sector", e.target.value)}
+            <FormFilter forms={companyForms} selectedFormId={selectedFormId} onChange={(id) => { setParam("form", id); setParam("sector", ""); }} />
+            <select value={sectorFilter} onChange={(e) => setParam("sector", e.target.value)}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
               <option value="">Todos os setores</option>
               {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
@@ -122,7 +142,13 @@ export default function SurveyAnalysis() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {sectionQuestions.map((q) => (
-              <QuestionChart key={q.id} questionId={q.id} questionText={`${q.number}. ${q.text}`} companyId={effectiveCompany} getAnswerDistribution={sectorFilter || selectedFormId || effectiveCompany ? customDistribution : getAnswerDistribution} />
+              <QuestionChart
+                key={q.id}
+                questionId={q.id}
+                questionText={`${q.number}. ${q.text}`}
+                companyId={effectiveCompany || undefined}
+                getAnswerDistribution={useCustomDist ? customDistribution : getAnswerDistribution}
+              />
             ))}
           </div>
           {sectionQuestions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhuma pergunta com dados nesta seção.</p>}

@@ -11,21 +11,24 @@ import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Heatmap() {
-  const { isCompanyUser } = useAuth();
+  const { isCompanyUser, userCompanyId } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const { isLoading, hasData, companies, respondents, formConfigs, getAvailableSections, getAvailableQuestions, getQuestionAverage } = useSurveyData();
+  const { isLoading, hasData, companies, respondents, formConfigs, getAvailableSections, getAvailableQuestions, getQuestionAverage, getFormConfigsForCompany } = useSurveyData();
   const availableSections = getAvailableSections();
 
-  // Forms for selected companies (or all)
-  const relevantForms = selectedCompanies.length === 1
-    ? formConfigs.filter(f => f.companyKey === selectedCompanies[0])
-    : selectedCompanies.length === 0
-      ? formConfigs
-      : [];
+  // For company_user: only show forms for their linked company
+  // For admins: forms for selected companies (or all)
+  const relevantForms = isCompanyUser && userCompanyId
+    ? getFormConfigsForCompany(userCompanyId)
+    : selectedCompanies.length === 1
+      ? formConfigs.filter(f => f.companyKey === selectedCompanies[0])
+      : selectedCompanies.length === 0
+        ? formConfigs
+        : [];
 
   if (isLoading) return <PageSkeleton />;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
