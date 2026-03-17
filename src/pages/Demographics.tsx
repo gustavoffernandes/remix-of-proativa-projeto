@@ -5,7 +5,7 @@ import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
@@ -15,7 +15,6 @@ import { cn, uniqueSectors } from "@/lib/utils";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
 
-// Normalize sex values for consistent display
 function normalizeSex(raw: string | null | undefined): string {
   if (!raw) return "Não informado";
   const v = raw.trim().toLowerCase();
@@ -29,9 +28,21 @@ export default function Demographics() {
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const { filters, setFilter } = useUrlFilters({ company: "", sector: "" });
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isLoading, hasData, companies, respondents, getAvailableSections } = useSurveyData();
   const availableSections = getAvailableSections();
+
+  const companyFilter = searchParams.get("company") || "";
+  const sectorFilter = searchParams.get("sector") || "";
+
+  const setParam = (key: string, value: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value === "") next.delete(key);
+      else next.set(key, value);
+      return next;
+    }, { replace: true });
+  };
 
   if (isLoading) return <PageSkeleton />;
   if (!hasData) return (
@@ -42,8 +53,6 @@ export default function Demographics() {
     </DashboardLayout>
   );
 
-  const companyFilter = filters.company;
-  const sectorFilter = filters.sector;
   const effectiveCompanyFilter = isCompanyUser && companies.length === 1 ? companies[0].id : companyFilter;
   const effectiveSections = selectedSections.length > 0 ? availableSections.filter(s => selectedSections.includes(s.id)) : availableSections;
 
@@ -67,7 +76,6 @@ export default function Demographics() {
     ? companyPool.filter(r => r.sector.toLowerCase().trim() === sectorFilter.toLowerCase().trim())
     : companyPool;
 
-  // Normalize sex for all respondents in pool
   const poolWithSex = pool.map(r => ({ ...r, normalizedSex: normalizeSex(r.sex) }));
 
   function groupAverage(group: typeof pool, sectionId: string): number {
@@ -116,13 +124,19 @@ export default function Demographics() {
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
             {!isCompanyUser && (
-              <select value={companyFilter} onChange={(e) => { setFilter("company", e.target.value); setFilter("sector", ""); }}
-                className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
+              <select
+                value={companyFilter}
+                onChange={(e) => {
+                  setParam("company", e.target.value);
+                  setParam("sector", "");
+                }}
+                className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
+              >
                 <option value="">Todas as empresas</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             )}
-            <select value={sectorFilter} onChange={(e) => setFilter("sector", e.target.value)}
+            <select value={sectorFilter} onChange={(e) => setParam("sector", e.target.value)}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto">
               <option value="">Todos os setores</option>
               {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
