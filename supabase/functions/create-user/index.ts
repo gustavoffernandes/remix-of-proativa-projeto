@@ -51,16 +51,28 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Support listing users with emails for admin UI
+    // ==========================================
+    // ROTA PARA LISTAR USUÁRIOS
+    // ==========================================
     if (body.action === "list") {
       const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-      if (listError) return new Response(JSON.stringify({ error: listError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      
+      if (listError) {
+        return new Response(
+          JSON.stringify({ error: listError.message }), 
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ users: users.map(u => ({ id: u.id, email: u.email })) }),
+        JSON.stringify({ users: users.map((u: any) => ({ id: u.id, email: u.email })) }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // ==========================================
+    // ROTA PARA CRIAR USUÁRIOS
+    // ==========================================
     const { email, password, role = "user", company_id = null } = body;
 
     if (!email || !password) {
@@ -122,7 +134,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Audit log: record the user creation event
+    // Audit log
     try {
       await adminClient.from("audit_logs").insert({
         actor_user_id: callerUser.id,
@@ -132,7 +144,6 @@ Deno.serve(async (req) => {
         details: { email, role, company_id: role === "company_user" ? company_id : null },
       });
     } catch (_auditError) {
-      // Non-blocking: log failure silently — user was already created
       console.warn("Audit log insert failed:", _auditError);
     }
 
