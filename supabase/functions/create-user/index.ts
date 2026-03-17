@@ -49,7 +49,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { email, password, role = "user", company_id = null } = await req.json();
+    const body = await req.json();
+
+    // Support listing users with emails for admin UI
+    if (body.action === "list") {
+      const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+      if (listError) return new Response(JSON.stringify({ error: listError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({ users: users.map(u => ({ id: u.id, email: u.email })) }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { email, password, role = "user", company_id = null } = body;
 
     if (!email || !password) {
       return new Response(
