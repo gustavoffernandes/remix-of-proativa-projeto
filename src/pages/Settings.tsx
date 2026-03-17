@@ -280,10 +280,10 @@ export default function Settings() {
                             const companyName = ur.company_id ? companiesList.find(c => c.id === ur.company_id)?.company_name || ur.company_id : "—";
                             return (
                               <tr key={ur.id} className="border-b border-border/50 last:border-0">
-                                <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground truncate max-w-[120px]" title={ur.user_id}>
-                                  {ur.user_id.substring(0, 8)}…
-                                  {isCurrentUser && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">você</span>}
-                                </td>
+                                 <td className="px-4 py-2.5 text-xs text-muted-foreground truncate max-w-[180px]" title={ur.user_id}>
+                                   {(ur as any).email || ur.user_id.substring(0, 16) + "…"}
+                                   {isCurrentUser && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">você</span>}
+                                 </td>
                                 <td className="px-4 py-2.5 text-center">
                                   {isEditing ? (
                                     <select value={editingRole} onChange={e => setEditingRole(e.target.value)}
