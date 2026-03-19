@@ -686,7 +686,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
 
     autoTable(doc, {
       startY: 48,
-      head: [["Setor", "Respostas", ...availableSections.map(s => s.shortName)]],
+      head: [["Setor", "Respondidos", "% Total", ...availableSections.map(s => s.shortName)]],
       body: sectorTableData,
       theme: "grid",
       headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
