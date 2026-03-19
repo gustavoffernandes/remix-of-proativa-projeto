@@ -135,34 +135,49 @@ export type Database = {
       }
       google_forms_config: {
         Row: {
+          cnpj: string | null
           company_name: string
           created_at: string
+          employee_count: number | null
+          form_title: string | null
           form_url: string | null
           id: string
           is_active: boolean
           last_sync_at: string | null
+          sector: string | null
           sheet_name: string
           spreadsheet_id: string
+          updated_at: string
         }
         Insert: {
+          cnpj?: string | null
           company_name: string
           created_at?: string
+          employee_count?: number | null
+          form_title?: string | null
           form_url?: string | null
           id?: string
           is_active?: boolean
           last_sync_at?: string | null
+          sector?: string | null
           sheet_name?: string
           spreadsheet_id: string
+          updated_at?: string
         }
         Update: {
+          cnpj?: string | null
           company_name?: string
           created_at?: string
+          employee_count?: number | null
+          form_title?: string | null
           form_url?: string | null
           id?: string
           is_active?: boolean
           last_sync_at?: string | null
+          sector?: string | null
           sheet_name?: string
           spreadsheet_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -250,21 +265,32 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          company_id: string | null
           id: string
           role: string
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           id?: string
           role?: string
           user_id: string
         }
         Update: {
+          company_id?: string | null
           id?: string
           role?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "google_forms_config"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
