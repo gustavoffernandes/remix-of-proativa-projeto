@@ -14,6 +14,8 @@ export interface PDFExportData {
   getAnswerDistribution: (questionId: string, companyId?: string) => { value: number; count: number; percentage: number }[];
   getAvailableSections: () => { id: string; name: string; shortName: string }[];
   getAvailableQuestions: () => Question[];
+  actionPlans?: { id: string; company_config_id: string; title: string; description: string; factor_id: string; risk_level: string; status: string }[];
+  actionTasks?: { id: string; action_plan_id: string; title: string; description: string; observation: string; is_completed: boolean }[];
 }
 
 const COLORS = {
