@@ -8,58 +8,109 @@ function getColor(value: number, isNegative: boolean): string {
   return "bg-destructive/70 text-destructive-foreground";
 }
 
+function getLabel(value: number, isNegative: boolean): string {
+  const v = isNegative ? 6 - value : value;
+  if (v >= 4) return "Bom";
+  if (v >= 3) return "Moderado";
+  return "Ruim";
+}
+
 interface HeatmapProps {
   sectionId: string;
   companies: RealCompany[];
   getQuestionAverage: (questionId: string, companyId?: string) => number;
   getAvailableQuestions: () => Question[];
+  isNegativeSection?: boolean;
 }
 
-export function HeatmapTable({ sectionId, companies, getQuestionAverage, getAvailableQuestions }: HeatmapProps) {
+export function HeatmapTable({ sectionId, companies, getQuestionAverage, getAvailableQuestions, isNegativeSection }: HeatmapProps) {
   const availableQuestions = getAvailableQuestions();
   const sectionQuestions = availableQuestions.filter((q) => q.section === sectionId);
-  const isNegative = sectionId === "vivencias" || sectionId === "saude";
+  const isNegative = isNegativeSection ?? (sectionId === "vivencias" || sectionId === "saude");
 
   if (sectionQuestions.length === 0) {
     return <p className="text-sm text-muted-foreground">Nenhuma pergunta com dados nesta seção.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-border bg-secondary/50">
-            <th className="sticky left-0 z-10 bg-secondary/90 px-4 py-3 text-left font-semibold text-foreground min-w-[200px]">
-              Pergunta
-            </th>
-            {companies.map((c) => (
-              <th key={c.id} className="px-3 py-3 text-center font-semibold text-foreground min-w-[100px]">
-                <span className="block truncate max-w-[100px]" title={c.name}>{c.name.split(' ')[0]}</span>
+    <div className="space-y-3">
+      {/* Type badge */}
+      <div className="flex items-center gap-3">
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isNegative ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
+          {isNegative ? "⚠ Perguntas Negativas" : "✓ Perguntas Positivas"}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {isNegative
+            ? "Valores mais altos indicam maior risco"
+            : "Valores mais altos indicam melhor resultado"}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-secondary/50">
+              <th className="sticky left-0 z-10 bg-secondary/90 px-4 py-3 text-left font-semibold text-foreground min-w-[200px]">
+                Pergunta
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sectionQuestions.map((q) => (
-            <tr key={q.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-              <td className="sticky left-0 z-10 bg-card px-4 py-2.5 text-foreground font-medium">
-                <span className="text-muted-foreground mr-1.5">{q.number}.</span>
-                {q.text}
-              </td>
-              {companies.map((c) => {
-                const avg = getQuestionAverage(q.id, c.id);
-                return (
-                  <td key={c.id} className="px-3 py-2.5 text-center">
-                    <span className={`inline-flex items-center justify-center w-12 rounded-md px-2 py-1 text-xs font-bold ${getColor(avg, isNegative)}`}>
-                      {avg.toFixed(1)}
-                    </span>
-                  </td>
-                );
-              })}
+              {companies.map((c) => (
+                <th key={c.id} className="px-3 py-3 text-center font-semibold text-foreground min-w-[100px]">
+                  <span className="block truncate max-w-[100px]" title={c.name}>{c.name.split(' ')[0]}</span>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sectionQuestions.map((q) => (
+              <tr key={q.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                <td className="sticky left-0 z-10 bg-card px-4 py-2.5 text-foreground font-medium">
+                  <span className="text-muted-foreground mr-1.5">{q.number}.</span>
+                  {q.text}
+                </td>
+                {companies.map((c) => {
+                  const avg = getQuestionAverage(q.id, c.id);
+                  return (
+                    <td key={c.id} className="px-3 py-2.5 text-center">
+                      <span
+                        className={`inline-flex items-center justify-center w-12 rounded-md px-2 py-1 text-xs font-bold ${getColor(avg, isNegative)}`}
+                        title={getLabel(avg, isNegative)}
+                      >
+                        {avg.toFixed(1)}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+        <span className="text-xs font-semibold text-muted-foreground">Legenda:</span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded bg-success/80" />
+          <span className="text-xs text-foreground font-medium">Bom</span>
+          <span className="text-[10px] text-muted-foreground">
+            ({isNegative ? "≤ 2.0" : "≥ 4.0"})
+          </span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded bg-warning/70" />
+          <span className="text-xs text-foreground font-medium">Moderado</span>
+          <span className="text-[10px] text-muted-foreground">
+            ({isNegative ? "2.1 – 3.0" : "3.0 – 3.9"})
+          </span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded bg-destructive/70" />
+          <span className="text-xs text-foreground font-medium">Ruim</span>
+          <span className="text-[10px] text-muted-foreground">
+            ({isNegative ? "> 3.0" : "< 3.0"})
+          </span>
+        </span>
+      </div>
     </div>
   );
 }

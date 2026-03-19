@@ -14,6 +14,8 @@ export interface PDFExportData {
   getAnswerDistribution: (questionId: string, companyId?: string) => { value: number; count: number; percentage: number }[];
   getAvailableSections: () => { id: string; name: string; shortName: string }[];
   getAvailableQuestions: () => Question[];
+  actionPlans?: { id: string; company_config_id: string; title: string; description: string; factor_id: string; risk_level: string; status: string }[];
+  actionTasks?: { id: string; action_plan_id: string; title: string; description: string; observation: string; is_completed: boolean }[];
 }
 
 const COLORS = {
@@ -466,76 +468,157 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
   });
 
   // ==================== 5. ACTION PLAN ====================
-  // Uses the EXACT SAME logic as ActionPlans.tsx page
+  // Uses real action plan data from database if available, otherwise suggests
   doc.addPage();
   pageNum.value++;
   addHeader(doc, company.name, "Plano de Acao");
   addFooter(doc, pageNum.value);
 
   let ay = 48;
-  ay = addSectionTitle(doc, "5. Plano de Acao Sugerido", ay);
+  ay = addSectionTitle(doc, "5. Plano de Acao", ay);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
-  const introLines = wrapText(
-    "Com base nos resultados obtidos e utilizando a mesma logica de geracao automatica de planos da plataforma, recomenda-se a implementacao das seguintes acoes para os fatores identificados com risco medio ou alto:",
-    CONTENT_WIDTH
-  );
-  introLines.forEach((line: string) => {
-    doc.text(line, MARGIN, ay); ay += 4.5;
-  });
-  ay += 4;
+  // Check if we have real action plans
+  const realPlans = (data.actionPlans || []).filter(p => p.company_config_id === companyId);
+  const realTasks = data.actionTasks || [];
 
-  // Generate action plans using same logic as ActionPlans page
-  const riskyFactors = factorData.filter(f => f.risk === "high" || f.risk === "medium");
+  if (realPlans.length > 0) {
+    const introLines = wrapText(
+      "Planos de acao registrados na plataforma para os fatores de risco identificados:",
+      CONTENT_WIDTH
+    );
+    introLines.forEach((line: string) => {
+      doc.text(line, MARGIN, ay); ay += 4.5;
+    });
+    ay += 4;
 
-  if (riskyFactors.length === 0) {
-    doc.setFont("helvetica", "italic");
-    doc.text("Nenhum fator com risco medio ou alto identificado. Manter controles existentes.", MARGIN, ay);
-  } else {
     let planNum = 1;
-    riskyFactors.forEach(f => {
-      const suggested = getSuggestedActions(f.factor.id, f.risk);
-      if (!suggested) return;
+    realPlans.forEach(plan => {
+      const planTasksList = realTasks.filter(t => t.action_plan_id === plan.id);
+      const factor = ALL_FACTORS.find(f => f.id === plan.factor_id);
 
       ay = checkPageBreak(doc, ay, 30, company.name, "Plano de Acao (cont.)", pageNum);
 
-      // Plan header
-      doc.setFillColor(...(f.risk === "high" ? COLORS.danger : COLORS.warning));
+      // Plan header with status color
+      const statusColor = plan.status === "completed" ? COLORS.success : plan.status === "in_progress" ? COLORS.warning : COLORS.muted;
+      doc.setFillColor(...statusColor);
       doc.rect(MARGIN, ay - 3, 3, 6, "F");
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.text(`${planNum}. ${removeDiacritics(suggested.title)}`, MARGIN + 6, ay);
+      doc.text(`${planNum}. ${removeDiacritics(plan.title)}`, MARGIN + 6, ay);
+
+      // Status label
+      const statusLabel = plan.status === "completed" ? "Concluido" : plan.status === "in_progress" ? "Em andamento" : "Pendente";
+      doc.setFontSize(7);
+      doc.setTextColor(...statusColor);
+      doc.text(`[${statusLabel}]`, 160, ay);
+      doc.setTextColor(...COLORS.text);
       ay += 5;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...COLORS.muted);
-      doc.text(`Fator: ${removeDiacritics(f.factor.name)} | Media: ${f.avg.toFixed(2)} | ${removeDiacritics(getRiskLabel(f.risk))} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
+      doc.text(`Fator: ${removeDiacritics(factor?.name || plan.factor_id)} | Nivel: ${plan.risk_level}`, MARGIN + 6, ay);
       doc.setTextColor(...COLORS.text);
       ay += 6;
 
-      // Tasks as a clean table
-      const taskData = suggested.tasks.map((task, i) => [`${i + 1}`, removeDiacritics(task)]);
-      
-      autoTable(doc, {
-        startY: ay,
-        body: taskData,
-        theme: "plain",
-        bodyStyles: { fontSize: 7.5, textColor: COLORS.text, cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 } },
-        columnStyles: { 
-          0: { cellWidth: 8, halign: "center", fontStyle: "bold", textColor: COLORS.accent },
-          1: { cellWidth: CONTENT_WIDTH - 20 }
-        },
-        margin: { left: MARGIN + 8, right: MARGIN },
-      });
-      ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
+      // Tasks as "O que / Por que / Como / Status" table
+      if (planTasksList.length > 0) {
+        const taskTableData = planTasksList.map(t => [
+          removeDiacritics(t.title),
+          removeDiacritics(t.description || "-"),
+          removeDiacritics(t.observation || "-"),
+          t.is_completed ? "Executada" : "Pendente",
+        ]);
+
+        autoTable(doc, {
+          startY: ay,
+          head: [["O que", "Por que", "Como", "Status"]],
+          body: taskTableData,
+          theme: "grid",
+          headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 7, fontStyle: "bold" },
+          bodyStyles: { fontSize: 7, textColor: COLORS.text },
+          columnStyles: { 3: { cellWidth: 20, halign: "center" } },
+          alternateRowStyles: { fillColor: COLORS.bg },
+          margin: { left: MARGIN + 4, right: MARGIN },
+          didParseCell: (cellData) => {
+            if (cellData.section === "body" && cellData.column.index === 3) {
+              const val = String(cellData.cell.raw);
+              if (val === "Executada") {
+                cellData.cell.styles.textColor = COLORS.success;
+                cellData.cell.styles.fontStyle = "bold";
+              } else {
+                cellData.cell.styles.textColor = COLORS.warning;
+              }
+            }
+          },
+        });
+        ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
+      }
 
       planNum++;
     });
+  } else {
+    // Fallback: generate suggested plans like before
+    const introLines = wrapText(
+      "Com base nos resultados obtidos, recomenda-se a implementacao das seguintes acoes para os fatores identificados com risco medio ou alto:",
+      CONTENT_WIDTH
+    );
+    introLines.forEach((line: string) => {
+      doc.text(line, MARGIN, ay); ay += 4.5;
+    });
+    ay += 4;
+
+    const riskyFactors = factorData.filter(f => f.risk === "high" || f.risk === "medium");
+
+    if (riskyFactors.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.text("Nenhum fator com risco medio ou alto identificado. Manter controles existentes.", MARGIN, ay);
+    } else {
+      let planNum = 1;
+      riskyFactors.forEach(f => {
+        const suggested = getSuggestedActions(f.factor.id, f.risk);
+        if (!suggested) return;
+
+        ay = checkPageBreak(doc, ay, 30, company.name, "Plano de Acao (cont.)", pageNum);
+
+        doc.setFillColor(...(f.risk === "high" ? COLORS.danger : COLORS.warning));
+        doc.rect(MARGIN, ay - 3, 3, 6, "F");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(`${planNum}. ${removeDiacritics(suggested.title)}`, MARGIN + 6, ay);
+        ay += 5;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.muted);
+        doc.text(`Fator: ${removeDiacritics(f.factor.name)} | Media: ${f.avg.toFixed(2)} | ${removeDiacritics(getRiskLabel(f.risk))} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
+        doc.setTextColor(...COLORS.text);
+        ay += 6;
+
+        const taskData = suggested.tasks.map((task, i) => [`${i + 1}`, removeDiacritics(task)]);
+        
+        autoTable(doc, {
+          startY: ay,
+          body: taskData,
+          theme: "plain",
+          bodyStyles: { fontSize: 7.5, textColor: COLORS.text, cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 } },
+          columnStyles: { 
+            0: { cellWidth: 8, halign: "center", fontStyle: "bold", textColor: COLORS.accent },
+            1: { cellWidth: CONTENT_WIDTH - 20 }
+          },
+          margin: { left: MARGIN + 8, right: MARGIN },
+        });
+        ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
+
+        planNum++;
+      });
+    }
   }
 
   // ==================== 6. DETAIL PAGES ====================
@@ -586,6 +669,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
 
     const sectorTableData = sectors.map(sector => {
       const sectorPool = pool.filter((r: any) => r.sector === sector);
+      const pct = pool.length > 0 ? `${Math.round((sectorPool.length / pool.length) * 100)}%` : "0%";
       const sectionAvgs = availableSections.map(s => {
         const qs = availableQuestions.filter(q => q.section === s.id);
         if (qs.length === 0 || sectorPool.length === 0) return "0.00";
@@ -597,12 +681,12 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
         }, 0) / qsWithData.length;
         return avg.toFixed(2);
       });
-      return [sector, `${sectorPool.length}`, ...sectionAvgs];
+      return [sector, `${sectorPool.length}`, pct, ...sectionAvgs];
     });
 
     autoTable(doc, {
       startY: 48,
-      head: [["Setor", "Respostas", ...availableSections.map(s => s.shortName)]],
+      head: [["Setor", "Respondidos", "% Total", ...availableSections.map(s => s.shortName)]],
       body: sectorTableData,
       theme: "grid",
       headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontSize: 8, fontStyle: "bold" },
