@@ -386,7 +386,7 @@ export default function Reports() {
                     const q = availableQuestionsList.find(q => q.id === o.questionId);
                     return (
                       <tr key={i} className="border-b border-warning/10">
-                        <td className="px-3 py-1.5 font-medium text-foreground">{o.respondent.name}</td>
+                        <td className="px-3 py-1.5 font-medium text-foreground">Respondente {i + 1}</td>
                         <td className="px-3 py-1.5 text-muted-foreground">{o.respondent.sector}</td>
                         <td className="px-3 py-1.5 text-foreground max-w-[200px] truncate">{q?.text || o.questionId}</td>
                         <td className="px-3 py-1.5 text-center font-bold text-warning">{o.value}</td>
