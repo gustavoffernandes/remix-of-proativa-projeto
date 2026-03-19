@@ -422,7 +422,7 @@ export default function Reports() {
                   <p className="text-xs text-muted-foreground mt-1">Acesse a página <strong>Planos de Ação</strong> para gerar planos baseados nos fatores de risco.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+              <div className="space-y-3">
                   {companyPlans.map(plan => {
                     const planTasks = tasks.filter(t => t.action_plan_id === plan.id);
                     const completedTasks = planTasks.filter(t => t.is_completed).length;
@@ -447,16 +447,32 @@ export default function Reports() {
                           <span>Tarefas: <strong className="text-foreground">{completedTasks}/{planTasks.length} concluídas</strong></span>
                         </div>
                         {planTasks.length > 0 && (
-                          <div className="mt-3 space-y-1">
-                            {planTasks.map(task => (
-                              <div key={task.id} className={cn("flex items-center gap-2 text-xs px-2 py-1 rounded",
-                                task.is_completed ? "bg-success/5 text-success" : "bg-muted/50 text-muted-foreground")}>
-                                <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0",
-                                  task.is_completed ? "bg-success" : "bg-muted-foreground")} />
-                                <span className={task.is_completed ? "line-through opacity-60" : ""}>{task.title}</span>
-                                {task.observation && <span className="ml-auto italic text-[10px] truncate max-w-[200px]">"{task.observation}"</span>}
-                              </div>
-                            ))}
+                          <div className="mt-3 overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-border">
+                                  <th className="px-3 py-1.5 text-left font-semibold text-muted-foreground">O que</th>
+                                  <th className="px-3 py-1.5 text-left font-semibold text-muted-foreground">Por que</th>
+                                  <th className="px-3 py-1.5 text-left font-semibold text-muted-foreground">Como</th>
+                                  <th className="px-3 py-1.5 text-center font-semibold text-muted-foreground">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {planTasks.map(task => (
+                                  <tr key={task.id} className={cn("border-b border-border/50", task.is_completed ? "bg-success/5" : "bg-warning/5")}>
+                                    <td className="px-3 py-2 text-foreground font-medium">{task.title}</td>
+                                    <td className="px-3 py-2 text-muted-foreground">{task.description || "—"}</td>
+                                    <td className="px-3 py-2 text-muted-foreground italic">{task.observation || "—"}</td>
+                                    <td className="px-3 py-2 text-center">
+                                      <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                        task.is_completed ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
+                                        {task.is_completed ? "✓ Executada" : "⏳ Pendente"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         )}
                       </div>

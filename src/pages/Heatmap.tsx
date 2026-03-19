@@ -77,7 +77,7 @@ export default function Heatmap() {
             <FormFilter forms={relevantForms} selectedFormId={selectedFormId} onChange={setSelectedFormId} />
             <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
           </div>
-          <HeatmapTable sectionId={activeSection} companies={effectiveCompanies} getQuestionAverage={customGetQuestionAverage} getAvailableQuestions={getAvailableQuestions} />
+          <HeatmapTable sectionId={activeSection} companies={effectiveCompanies} getQuestionAverage={customGetQuestionAverage} getAvailableQuestions={getAvailableQuestions} isNegativeSection={activeSection === "vivencias" || activeSection === "saude"} />
         </div>
       </ErrorBoundary>
     </DashboardLayout>
