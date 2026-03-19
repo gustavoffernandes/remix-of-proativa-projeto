@@ -100,27 +100,25 @@ export default function Settings() {
   const { data: userRoles = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["all-user-roles"],
     queryFn: async () => {
-      const { data: roles, error } = await supabase
-        .from("user_roles")
-        .select("*")
-        .order("role");
-      if (error) throw error;
-      const rolesData = (roles || []) as { id: string; user_id: string; role: string; company_id: string | null }[];
-      // Try to enrich with emails via list-users edge function
-      try {
-        const { data: usersData } = await supabase.functions.invoke("create-user", {
-          body: { action: "list" },
-        });
-        const emailMap: Record<string, string> = {};
-        if (usersData?.users) {
-          usersData.users.forEach((u: any) => { emailMap[u.id] = u.email; });
-        }
-        return rolesData.map(r => ({ ...r, email: emailMap[r.user_id] || "" }));
-      } catch {
-        return rolesData.map(r => ({ ...r, email: "" }));
+      // Puxa TANTO os emails quanto as roles direto da Edge Function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("create-user", {
+        body: JSON.stringify({ action: "list" }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (fnError) throw fnError;
+
+      const parsed = typeof fnData === "string" ? JSON.parse(fnData) : fnData;
+      const emailMap: Record<string, string> = {};
+      
+      if (parsed?.users) {
+        parsed.users.forEach((u: any) => { emailMap[u.id] = u.email; });
       }
+
+      const rolesData = parsed?.roles || [];
+      return rolesData.map((r: any) => ({ ...r, email: emailMap[r.user_id] || "" }));
     },
     enabled: isAdmin,
+    refetchOnWindowFocus: true,
   });
 
   const handleSaveProfile = async () => {
@@ -145,7 +143,10 @@ export default function Settings() {
     try {
       const body: Record<string, string> = { email: newUserEmail, password: newUserPassword, role: newUserRole };
       if (newUserRole === "company_user") body.company_id = newUserCompanyId;
-      const { data, error } = await supabase.functions.invoke("create-user", { body });
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
+      });
       if (error) throw error;
       const roleLabel = ROLE_LABEL[newUserRole] || newUserRole;
       toast({ title: "Usuário criado!", description: `${newUserEmail} foi adicionado como ${roleLabel}.` });
@@ -157,11 +158,17 @@ export default function Settings() {
 
   const handleUpdateUserRole = async (userRoleId: string) => {
     try {
-      const update: any = { role: editingRole };
-      if (editingRole === "company_user") update.company_id = editingCompanyId || null;
-      else update.company_id = null;
-      const { error } = await supabase.from("user_roles").update(update).eq("id", userRoleId);
+      const body: any = { action: "update", role_id: userRoleId, role: editingRole };
+      if (editingRole === "company_user") body.company_id = editingCompanyId || null;
+
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
+      });
+      
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
       toast({ title: "Usuário atualizado!" });
       setEditingUserId(null);
       qc.invalidateQueries({ queryKey: ["all-user-roles"] });
@@ -171,10 +178,16 @@ export default function Settings() {
   };
 
   const handleDeleteUser = async (userRoleId: string, userId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.")) return;
+    if (!confirm("Tem certeza que deseja excluir este usuário definitivamente? Esta ação não pode ser desfeita.")) return;
     try {
-      const { error } = await supabase.from("user_roles").delete().eq("id", userRoleId);
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: JSON.stringify({ action: "delete", user_id: userId, role_id: userRoleId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
       toast({ title: "Usuário removido!" });
       qc.invalidateQueries({ queryKey: ["all-user-roles"] });
     } catch (e: any) {
