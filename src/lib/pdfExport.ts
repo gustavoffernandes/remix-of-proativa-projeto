@@ -669,6 +669,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
 
     const sectorTableData = sectors.map(sector => {
       const sectorPool = pool.filter((r: any) => r.sector === sector);
+      const pct = pool.length > 0 ? `${Math.round((sectorPool.length / pool.length) * 100)}%` : "0%";
       const sectionAvgs = availableSections.map(s => {
         const qs = availableQuestions.filter(q => q.section === s.id);
         if (qs.length === 0 || sectorPool.length === 0) return "0.00";
@@ -680,7 +681,7 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
         }, 0) / qsWithData.length;
         return avg.toFixed(2);
       });
-      return [sector, `${sectorPool.length}`, ...sectionAvgs];
+      return [sector, `${sectorPool.length}`, pct, ...sectionAvgs];
     });
 
     autoTable(doc, {
