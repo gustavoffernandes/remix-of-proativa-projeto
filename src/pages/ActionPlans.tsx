@@ -262,39 +262,66 @@ export default function ActionPlans() {
                         </div>
                       )}
 
-                      {/* Tasks */}
-                      <div className="space-y-2">
-                        {planTasks.map(task => (
-                          <div key={task.id} className="flex items-start gap-3 rounded-lg bg-muted/30 p-3">
-                            {readOnly ? (
-                              <span className={cn("mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0",
-                                task.is_completed ? "bg-primary border-primary" : "border-border")}>
-                                {task.is_completed && <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                              </span>
-                            ) : (
-                              <input type="checkbox" checked={task.is_completed} onChange={() => updateTask(task.id, { is_completed: !task.is_completed })} className="mt-0.5 h-4 w-4 rounded border-border accent-primary" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className={cn("text-xs", task.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>{task.title}</p>
-                              {task.observation && <p className="text-[10px] text-muted-foreground mt-1 italic">📝 {task.observation}</p>}
-                              {!readOnly && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  <button onClick={() => { setEditingObs(editingObs === task.id ? null : task.id); setObsText(task.observation || ""); }} className="text-[10px] text-primary hover:underline flex items-center gap-1">
-                                    <MessageSquare className="h-3 w-3" /> {task.observation ? "Editar obs." : "Adicionar obs."}
-                                  </button>
-                                  <button onClick={() => deleteTask(task.id)} className="text-[10px] text-destructive hover:underline">Excluir</button>
-                                </div>
-                              )}
-                              {!readOnly && editingObs === task.id && (
-                                <div className="mt-2 flex gap-2">
-                                  <input value={obsText} onChange={e => setObsText(e.target.value)} placeholder="Observação..." className="flex-1 rounded border border-border bg-background px-2 py-1 text-xs" />
-                                  <button onClick={() => { updateTask(task.id, { observation: obsText }); setEditingObs(null); }} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Salvar</button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      {/* Tasks - O que / Por que / Como */}
+                      {planTasks.length > 0 && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th className="px-3 py-2 text-left font-semibold text-muted-foreground w-8"></th>
+                                <th className="px-3 py-2 text-left font-semibold text-muted-foreground">O que</th>
+                                <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Por que</th>
+                                <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Como</th>
+                                <th className="px-3 py-2 text-center font-semibold text-muted-foreground">Status</th>
+                                {!readOnly && <th className="px-3 py-2 text-center font-semibold text-muted-foreground">Ações</th>}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {planTasks.map(task => (
+                                <tr key={task.id} className={cn("border-b border-border/50 transition-colors", task.is_completed ? "bg-success/5" : "bg-warning/5")}>
+                                  <td className="px-3 py-2">
+                                    {readOnly ? (
+                                      <span className={cn("h-4 w-4 rounded border flex items-center justify-center shrink-0",
+                                        task.is_completed ? "bg-primary border-primary" : "border-border")}>
+                                        {task.is_completed && <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                      </span>
+                                    ) : (
+                                      <input type="checkbox" checked={task.is_completed} onChange={() => updateTask(task.id, { is_completed: !task.is_completed })} className="h-4 w-4 rounded border-border accent-primary" />
+                                    )}
+                                  </td>
+                                  <td className={cn("px-3 py-2 font-medium", task.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>{task.title}</td>
+                                  <td className="px-3 py-2 text-muted-foreground">{task.description || "—"}</td>
+                                  <td className="px-3 py-2 text-muted-foreground italic">{task.observation || "—"}</td>
+                                  <td className="px-3 py-2 text-center">
+                                    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                      task.is_completed ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
+                                      {task.is_completed ? "✓ Executada" : "⏳ Pendente"}
+                                    </span>
+                                  </td>
+                                  {!readOnly && (
+                                    <td className="px-3 py-2 text-center">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <button onClick={() => { setEditingObs(editingObs === task.id ? null : task.id); setObsText(task.observation || ""); }} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+                                          <MessageSquare className="h-3 w-3" /> {task.observation ? "Editar" : "Como"}
+                                        </button>
+                                        <button onClick={() => deleteTask(task.id)} className="text-[10px] text-destructive hover:underline">Excluir</button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Editing observation inline */}
+                      {!readOnly && editingObs && planTasks.some(t => t.id === editingObs) && (
+                        <div className="mt-2 flex gap-2 px-3">
+                          <input value={obsText} onChange={e => setObsText(e.target.value)} placeholder="Como fazer (observação)..." className="flex-1 rounded border border-border bg-background px-2 py-1 text-xs" />
+                          <button onClick={() => { updateTask(editingObs, { observation: obsText }); setEditingObs(null); }} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Salvar</button>
+                        </div>
+                      )}
 
                       {/* Add task - only for non-company users */}
                       {!readOnly && (
