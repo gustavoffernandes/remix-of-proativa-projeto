@@ -82,7 +82,7 @@ export default function ActionPlans() {
       });
       if (plan) {
         for (const task of suggested.tasks) {
-          await createTask({ action_plan_id: plan.id, title: task.title, description: task.porQue });
+          await createTask({ action_plan_id: plan.id, title: task.title, description: task.porQue, observation: task.como });
         }
       }
     }

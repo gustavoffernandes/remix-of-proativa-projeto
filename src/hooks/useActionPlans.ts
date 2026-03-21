@@ -81,7 +81,7 @@ export function useActionPlans() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (task: { action_plan_id: string; title: string; description?: string }) => {
+    mutationFn: async (task: { action_plan_id: string; title: string; description?: string; observation?: string }) => {
       const { data, error } = await supabase.from("action_plan_tasks").insert(task as any).select().single();
       if (error) throw error;
       return data as ActionPlanTask;
