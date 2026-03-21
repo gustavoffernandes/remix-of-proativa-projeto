@@ -81,8 +81,8 @@ export default function ActionPlans() {
         status: "pending",
       });
       if (plan) {
-        for (const taskTitle of suggested.tasks) {
-          await createTask({ action_plan_id: plan.id, title: taskTitle });
+        for (const task of suggested.tasks) {
+          await createTask({ action_plan_id: plan.id, title: task.title, description: task.porQue, observation: task.como });
         }
       }
     }
