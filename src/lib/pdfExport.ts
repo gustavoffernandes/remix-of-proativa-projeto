@@ -563,62 +563,23 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
       planNum++;
     });
   } else {
-    // Fallback: generate suggested plans like before
-    const introLines = wrapText(
-      "Com base nos resultados obtidos, recomenda-se a implementacao das seguintes acoes para os fatores identificados com risco medio ou alto:",
-      CONTENT_WIDTH
+    // No action plans registered - show informative message
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const noPlansText = removeDiacritics(
+      "Nenhum plano de acao foi cadastrado para esta empresa ate o momento. Para criar planos de acao baseados nos fatores de risco identificados, acesse a pagina 'Planos de Acao' na plataforma PROATIVA."
     );
-    introLines.forEach((line: string) => {
+    const noPlansLines = wrapText(noPlansText, CONTENT_WIDTH);
+    noPlansLines.forEach((line: string) => {
       doc.text(line, MARGIN, ay); ay += 4.5;
     });
-    ay += 4;
+    ay += 6;
 
-    const riskyFactors = factorData.filter(f => f.risk === "high" || f.risk === "medium");
-
-    if (riskyFactors.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.text("Nenhum fator com risco medio ou alto identificado. Manter controles existentes.", MARGIN, ay);
-    } else {
-      let planNum = 1;
-      riskyFactors.forEach(f => {
-        const suggested = getSuggestedActions(f.factor.id, f.risk);
-        if (!suggested) return;
-
-        ay = checkPageBreak(doc, ay, 30, company.name, "Plano de Acao (cont.)", pageNum);
-
-        doc.setFillColor(...(f.risk === "high" ? COLORS.danger : COLORS.warning));
-        doc.rect(MARGIN, ay - 3, 3, 6, "F");
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.text(`${planNum}. ${removeDiacritics(suggested.title)}`, MARGIN + 6, ay);
-        ay += 5;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(...COLORS.muted);
-        doc.text(`Fator: ${removeDiacritics(f.factor.name)} | Media: ${f.avg.toFixed(2)} | ${removeDiacritics(getRiskLabel(f.risk))} | Escala: ${f.scaleName}`, MARGIN + 6, ay);
-        doc.setTextColor(...COLORS.text);
-        ay += 6;
-
-        const taskData = suggested.tasks.map((task, i) => [`${i + 1}`, removeDiacritics(task)]);
-        
-        autoTable(doc, {
-          startY: ay,
-          body: taskData,
-          theme: "plain",
-          bodyStyles: { fontSize: 7.5, textColor: COLORS.text, cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 } },
-          columnStyles: { 
-            0: { cellWidth: 8, halign: "center", fontStyle: "bold", textColor: COLORS.accent },
-            1: { cellWidth: CONTENT_WIDTH - 20 }
-          },
-          margin: { left: MARGIN + 8, right: MARGIN },
-        });
-        ay = (doc as any).lastAutoTable?.finalY + 6 || ay + 20;
-
-        planNum++;
-      });
-    }
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.muted);
+    doc.text("Os planos de acao serao incluidos neste relatorio assim que forem criados na plataforma.", MARGIN, ay);
+    doc.setTextColor(...COLORS.text);
   }
 
   // ==================== 6. DETAIL PAGES ====================
