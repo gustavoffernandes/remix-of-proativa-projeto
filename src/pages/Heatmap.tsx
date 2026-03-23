@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { HeatmapTable } from "@/components/dashboard/HeatmapTable";
 import { MultiSelectCompanies } from "@/components/dashboard/MultiSelectCompanies";
