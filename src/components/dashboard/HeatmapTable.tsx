@@ -1,5 +1,4 @@
 import { questions, type Question } from "@/data/mockData";
-import type { RealCompany } from "@/hooks/useSurveyData";
 
 function getColor(value: number, isNegative: boolean): string {
   const v = isNegative ? 6 - value : value;
@@ -15,21 +14,30 @@ function getLabel(value: number, isNegative: boolean): string {
   return "Ruim";
 }
 
+export interface HeatmapColumn {
+  id: string;
+  name: string;
+}
+
 interface HeatmapProps {
   sectionId: string;
-  companies: RealCompany[];
-  getQuestionAverage: (questionId: string, companyId?: string) => number;
+  columns: HeatmapColumn[];
+  getQuestionAverage: (questionId: string, columnId?: string) => number;
   getAvailableQuestions: () => Question[];
   isNegativeSection?: boolean;
 }
 
-export function HeatmapTable({ sectionId, companies, getQuestionAverage, getAvailableQuestions, isNegativeSection }: HeatmapProps) {
+export function HeatmapTable({ sectionId, columns, getQuestionAverage, getAvailableQuestions, isNegativeSection }: HeatmapProps) {
   const availableQuestions = getAvailableQuestions();
   const sectionQuestions = availableQuestions.filter((q) => q.section === sectionId);
   const isNegative = isNegativeSection ?? (sectionId === "vivencias" || sectionId === "saude");
 
   if (sectionQuestions.length === 0) {
     return <p className="text-sm text-muted-foreground">Nenhuma pergunta com dados nesta seção.</p>;
+  }
+
+  if (columns.length === 0) {
+    return <p className="text-sm text-muted-foreground">Selecione pelo menos uma empresa ou formulário para visualizar o heatmap.</p>;
   }
 
   return (
@@ -53,9 +61,9 @@ export function HeatmapTable({ sectionId, companies, getQuestionAverage, getAvai
               <th className="sticky left-0 z-10 bg-secondary/90 px-4 py-3 text-left font-semibold text-foreground min-w-[200px]">
                 Pergunta
               </th>
-              {companies.map((c) => (
+              {columns.map((c) => (
                 <th key={c.id} className="px-3 py-3 text-center font-semibold text-foreground min-w-[100px]">
-                  <span className="block truncate max-w-[100px]" title={c.name}>{c.name.split(' ')[0]}</span>
+                  <span className="block truncate max-w-[140px]" title={c.name}>{c.name}</span>
                 </th>
               ))}
             </tr>
@@ -67,7 +75,7 @@ export function HeatmapTable({ sectionId, companies, getQuestionAverage, getAvai
                   <span className="text-muted-foreground mr-1.5">{q.number}.</span>
                   {q.text}
                 </td>
-                {companies.map((c) => {
+                {columns.map((c) => {
                   const avg = getQuestionAverage(q.id, c.id);
                   return (
                     <td key={c.id} className="px-3 py-2.5 text-center">
