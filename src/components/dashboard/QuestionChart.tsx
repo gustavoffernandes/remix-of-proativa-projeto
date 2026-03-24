@@ -99,9 +99,9 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
               <Line type="monotone" dataKey="value" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           ) : (
-            <RadarChart data={data} cx="50%" cy="50%" outerRadius={65}>
+            <RadarChart data={data} cx="50%" cy="50%" outerRadius={isMobile ? 50 : 65}>
               <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+              <PolarAngleAxis dataKey="name" tick={{ fontSize: isMobile ? 7 : 9, fill: "hsl(var(--muted-foreground))" }} />
               <PolarRadiusAxis tick={{ fontSize: 8 }} />
               <Radar dataKey="value" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.2} strokeWidth={2} />
             </RadarChart>
