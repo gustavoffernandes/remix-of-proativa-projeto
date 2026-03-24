@@ -19,6 +19,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Legend,
 } from "recharts";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
 
