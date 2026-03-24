@@ -211,7 +211,7 @@ export default function CompanyComparison() {
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar Comparativo</h3>
                 <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={100}>
+                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
                       <PolarGrid stroke="hsl(var(--border))" />
                       <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
