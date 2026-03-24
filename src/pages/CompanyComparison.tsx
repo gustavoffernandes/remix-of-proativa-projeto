@@ -344,13 +344,13 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar por Fator</h3>
-                <div className="h-[400px]">
+                <div className="h-[300px] sm:h-[400px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={factorData} cx="50%" cy="50%" outerRadius={120}>
+                    <RadarChart data={factorData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius + 20}>
                       <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="name" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarAngleAxis dataKey="name" tick={{ fontSize: chart.isMobile ? 6 : 8, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
                       {selectedCompanies.map((c, i) => <Radar key={c.id} name={c.name.split(" ")[0]} dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
                       <Legend wrapperStyle={{ fontSize: 10 }} />
