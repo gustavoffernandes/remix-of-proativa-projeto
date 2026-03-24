@@ -37,6 +37,7 @@ import { getAnswerDistribution as mockGetAnswerDistribution } from "@/data/mockD
 
 export function QuestionChart({ questionId, questionText, companyId, getAnswerDistribution }: QuestionChartProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
+  const isMobile = useIsMobile();
   const distFn = getAnswerDistribution || mockGetAnswerDistribution;
   const dist = distFn(questionId, companyId);
   const data = dist.map((d) => ({
@@ -45,6 +46,7 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
     percentage: d.percentage,
     score: d.value,
   }));
+  const tickSize = isMobile ? 8 : 10;
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-card">
