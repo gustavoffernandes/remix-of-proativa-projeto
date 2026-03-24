@@ -34,6 +34,7 @@ export default function CompanyComparison() {
   // Selected factors filter for "Por Fator" mode
   const [selectedFactors, setSelectedFactors] = useState<string[]>([]);
 
+  const chart = useChartConfig();
   const availableSections = getAvailableSections();
   const effectiveSelected = selected.length > 0 ? selected : companies.map(c => c.id);
   const toggle = (id: string) => { const current = effectiveSelected; setSelected(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
