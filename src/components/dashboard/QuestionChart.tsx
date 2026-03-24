@@ -85,7 +85,7 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
             </BarChart>
           ) : chartType === "pie" ? (
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" label={({ name, percentage }) => `${name}: ${percentage}%`}>
+              <Pie data={data} cx="50%" cy="50%" innerRadius={isMobile ? 30 : 40} outerRadius={isMobile ? 55 : 70} dataKey="value" label={isMobile ? false : ({ name, percentage }) => `${name}: ${percentage}%`}>
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
