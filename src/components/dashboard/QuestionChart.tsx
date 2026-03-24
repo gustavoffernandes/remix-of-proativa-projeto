@@ -76,8 +76,8 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
           {chartType === "bar" ? (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+               <XAxis dataKey="name" tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
+               <YAxis tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
