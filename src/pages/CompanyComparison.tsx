@@ -329,15 +329,15 @@ export default function CompanyComparison() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Comparação por Fator (10 Fatores PROART)</h3>
-                <div className="h-[400px]">
+                <div className="h-[300px] sm:h-[400px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={factorData} barCategoryGap="15%" layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis dataKey="name" type="category" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={100} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                      <XAxis type="number" domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: chart.isMobile ? 7 : 9, fill: "hsl(var(--muted-foreground))" }} width={chart.isMobile ? 60 : 100} />
+                      <Tooltip contentStyle={chart.tooltipStyle} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       {selectedCompanies.map((c, i) => <Bar key={c.id} dataKey={c.name.split(" ")[0]} fill={COLORS[i % COLORS.length]} radius={[0, 4, 4, 0]} />)}
                     </BarChart>
