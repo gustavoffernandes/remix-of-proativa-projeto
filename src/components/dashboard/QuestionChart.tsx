@@ -7,6 +7,7 @@ import {
 import { BarChart3, PieChartIcon, TrendingUp, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { scaleLabels } from "@/data/mockData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ChartType = "bar" | "pie" | "line" | "radar";
 
