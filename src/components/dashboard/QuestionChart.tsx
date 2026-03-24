@@ -93,8 +93,8 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
           ) : chartType === "line" ? (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+               <XAxis dataKey="name" tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
+               <YAxis tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
               <Line type="monotone" dataKey="value" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
