@@ -456,7 +456,7 @@ export default function CompanyComparison() {
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={sectorChartData.map(d => ({ ...d, subject: d.name }))} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
                       <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
                       {sectorAvgs.map((sa, i) => <Radar key={sa.sector} name={sa.sector} dataKey={sa.sector.substring(0, 8)} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
                       <Legend wrapperStyle={{ fontSize: 10 }} />
