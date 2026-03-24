@@ -209,7 +209,7 @@ export default function CompanyComparison() {
               </div>
               <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar Comparativo</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={100}>
                       <PolarGrid stroke="hsl(var(--border))" />
