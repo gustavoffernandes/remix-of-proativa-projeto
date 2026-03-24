@@ -225,7 +225,8 @@ export default function Index() {
             <h3 className="mb-4 text-sm font-semibold text-card-foreground flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Execução dos Planos de Ação</h3>
             <div className="space-y-3">
               {companies.map(c => {
-                const cPlans = plans.filter(p => p.company_config_id === c.id);
+                const cConfigIds = new Set(respondents.filter(r => r.companyId === c.id).map(r => (r as any).configId).filter(Boolean));
+                const cPlans = plans.filter(p => p.company_config_id === c.id || cConfigIds.has(p.company_config_id));
                 if (cPlans.length === 0) return null;
                 const cTasks = tasks.filter(t => cPlans.some(p => p.id === t.action_plan_id));
                 const completedTasks = cTasks.filter(t => t.is_completed).length;
