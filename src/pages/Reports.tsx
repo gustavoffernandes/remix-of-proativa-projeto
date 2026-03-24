@@ -19,6 +19,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Legend,
 } from "recharts";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
 
@@ -41,6 +42,7 @@ export default function Reports() {
   
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareSector, setCompareSector] = useState<string>("");
+  const chart = useChartConfig();
   const availableSections = getAvailableSections();
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
@@ -284,18 +286,16 @@ export default function Reports() {
           </div>
 
           {/* Radar - Factors */}
-          <div className="rounded-lg border border-border p-4 mb-5">
+          <div className="rounded-lg border border-border p-4 mb-5 min-w-0">
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Target className="h-3 w-3" /> Perfil Radar - 10 Fatores PROART</h4>
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={100}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
-                  <Radar dataKey="valor" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={280}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize - 2, fill: "hsl(var(--muted-foreground))" }} />
+                <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
+                <Radar dataKey="valor" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveChart>
           </div>
 
           {/* Factor Table */}

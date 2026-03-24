@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
@@ -7,7 +8,7 @@ import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
 } from "@/lib/proartMethodology";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   BarChart, Bar,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
@@ -21,6 +22,7 @@ export default function TemporalEvolution() {
   const { isLoading, hasData, companies, respondents, getAvailableSections } = useSurveyData();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const availableSections = getAvailableSections();
+  const chart = useChartConfig();
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
   if (!hasData) return <DashboardLayout><div className="flex flex-col items-center justify-center h-64 text-center"><p className="text-sm text-muted-foreground">Nenhum dado disponível.</p></div></DashboardLayout>;
@@ -29,9 +31,6 @@ export default function TemporalEvolution() {
   const company = companies.find(c => c.id === effectiveCompany);
   const companyRespondents = respondents.filter(r => r.companyId === effectiveCompany);
 
-  // Group by config_id (each config = a different survey/form application)
-  // Since respondents have companyId (which is config_id), we need to check if there are multiple configs for this company
-  // For now, group by month of response to show evolution
   const monthGroups: Record<string, typeof respondents> = {};
   companyRespondents.forEach(r => {
     if (!r.responseTimestamp) return;
@@ -44,7 +43,6 @@ export default function TemporalEvolution() {
   const sortedMonths = Object.keys(monthGroups).sort();
   const hasMultiplePeriods = sortedMonths.length >= 2;
 
-  // Calculate averages by section per month
   const evolutionBySection = sortedMonths.map(month => {
     const pool = monthGroups[month];
     const row: Record<string, string | number> = { period: month };
@@ -62,7 +60,6 @@ export default function TemporalEvolution() {
     return row;
   });
 
-  // Calculate averages by factor per month
   const evolutionByFactor = sortedMonths.map(month => {
     const pool = monthGroups[month];
     const row: Record<string, string | number> = { period: month };
@@ -73,7 +70,6 @@ export default function TemporalEvolution() {
     return row;
   });
 
-  // Delta between first and last period
   const firstPeriod = evolutionBySection[0];
   const lastPeriod = evolutionBySection[evolutionBySection.length - 1];
   const deltas = hasMultiplePeriods ? availableSections.map(s => ({
@@ -83,14 +79,12 @@ export default function TemporalEvolution() {
     delta: ((lastPeriod?.[s.shortName] as number || 0) - (firstPeriod?.[s.shortName] as number || 0)),
   })) : [];
 
-  // Radar comparing first vs last
   const radarComparison = hasMultiplePeriods ? availableSections.map(s => ({
     subject: s.shortName,
     [sortedMonths[0]]: firstPeriod?.[s.shortName] as number || 0,
     [sortedMonths[sortedMonths.length - 1]]: lastPeriod?.[s.shortName] as number || 0,
   })) : [];
 
-  // All companies evolution (for admin view)
   const allCompaniesEvolution = !isCompanyUser ? sortedMonths.map(month => {
     const row: Record<string, string | number> = { period: month };
     companies.forEach(c => {
@@ -119,8 +113,8 @@ export default function TemporalEvolution() {
       <div className="animate-fade-in space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" /> Evolução Temporal</h1>
-            <p className="text-sm text-muted-foreground mt-1">Compare pesquisas da mesma empresa ao longo do tempo</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2"><TrendingUp className="h-5 sm:h-6 w-5 sm:w-6 text-primary" /> Evolução Temporal</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Compare pesquisas da mesma empresa ao longo do tempo</p>
           </div>
           {!isCompanyUser && (
             <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
@@ -133,111 +127,100 @@ export default function TemporalEvolution() {
           <div className="rounded-xl border border-warning/30 bg-warning/5 p-6 text-center">
             <AlertTriangle className="h-8 w-8 text-warning mx-auto mb-3" />
             <h3 className="text-sm font-semibold text-foreground mb-1">Dados insuficientes para evolução temporal</h3>
-            <p className="text-xs text-muted-foreground">É necessário ter respostas de pelo menos 2 períodos diferentes para visualizar a evolução. Aplique o formulário novamente após algum tempo para comparar os resultados.</p>
+            <p className="text-xs text-muted-foreground">É necessário ter respostas de pelo menos 2 períodos diferentes para visualizar a evolução.</p>
           </div>
         )}
 
         {hasMultiplePeriods && (
           <>
-            {/* KPIs de evolução */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="rounded-lg border border-border bg-card p-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className="rounded-lg border border-border bg-card p-3 sm:p-4 text-center">
                 <p className="text-xs text-muted-foreground">Períodos</p>
-                <p className="text-2xl font-bold text-foreground">{sortedMonths.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{sortedMonths.length}</p>
               </div>
-              <div className="rounded-lg border border-border bg-card p-4 text-center">
+              <div className="rounded-lg border border-border bg-card p-3 sm:p-4 text-center">
                 <p className="text-xs text-muted-foreground">Primeiro</p>
-                <p className="text-sm font-bold text-foreground">{sortedMonths[0]}</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground">{sortedMonths[0]}</p>
                 <p className="text-[10px] text-muted-foreground">{firstPeriod?.respondentes} resp.</p>
               </div>
-              <div className="rounded-lg border border-border bg-card p-4 text-center">
+              <div className="rounded-lg border border-border bg-card p-3 sm:p-4 text-center">
                 <p className="text-xs text-muted-foreground">Último</p>
-                <p className="text-sm font-bold text-foreground">{sortedMonths[sortedMonths.length - 1]}</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground">{sortedMonths[sortedMonths.length - 1]}</p>
                 <p className="text-[10px] text-muted-foreground">{lastPeriod?.respondentes} resp.</p>
               </div>
-              <div className="rounded-lg border border-border bg-card p-4 text-center">
+              <div className="rounded-lg border border-border bg-card p-3 sm:p-4 text-center">
                 <p className="text-xs text-muted-foreground">Total Respostas</p>
-                <p className="text-2xl font-bold text-foreground">{companyRespondents.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{companyRespondents.length}</p>
               </div>
             </div>
 
-            {/* Evolution by Section */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Evolução por Escala</h3>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={evolutionBySection}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    {availableSections.map((s, i) => <Line key={s.id} type="monotone" dataKey={s.shortName} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 4 }} connectNulls />)}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={350}>
+                <LineChart data={evolutionBySection}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="period" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip contentStyle={chart.tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                  {availableSections.map((s, i) => <Line key={s.id} type="monotone" dataKey={s.shortName} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: chart.isMobile ? 2 : 4 }} connectNulls />)}
+                </LineChart>
+              </ResponsiveChart>
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              {/* Delta Chart */}
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Variação: {sortedMonths[0]} → {sortedMonths[sortedMonths.length - 1]}</h3>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={deltas} barCategoryGap="20%">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="primeiro" fill={COLORS[0]} radius={[4, 4, 0, 0]} name="Primeiro período" />
-                      <Bar dataKey="último" fill={COLORS[1]} radius={[4, 4, 0, 0]} name="Último período" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveChart height={300}>
+                  <BarChart data={deltas} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip contentStyle={chart.tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                    <Bar dataKey="primeiro" fill={COLORS[0]} radius={[4, 4, 0, 0]} name="Primeiro período" />
+                    <Bar dataKey="último" fill={COLORS[1]} radius={[4, 4, 0, 0]} name="Último período" />
+                  </BarChart>
+                </ResponsiveChart>
               </div>
 
-              {/* Radar comparison */}
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar: Primeiro vs Último</h3>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarComparison} cx="50%" cy="50%" outerRadius={100}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
-                      <Radar name={sortedMonths[0]} dataKey={sortedMonths[0]} stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.1} strokeWidth={2} />
-                      <Radar name={sortedMonths[sortedMonths.length - 1]} dataKey={sortedMonths[sortedMonths.length - 1]} stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.1} strokeWidth={2} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveChart height={300}>
+                  <RadarChart data={radarComparison} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
+                    <Radar name={sortedMonths[0]} dataKey={sortedMonths[0]} stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.1} strokeWidth={2} />
+                    <Radar name={sortedMonths[sortedMonths.length - 1]} dataKey={sortedMonths[sortedMonths.length - 1]} stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.1} strokeWidth={2} />
+                    <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                  </RadarChart>
+                </ResponsiveChart>
               </div>
             </div>
 
-            {/* Tabela de variação */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Detalhamento da Variação</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-border">
-                    <th className="px-4 py-2 text-left font-semibold text-muted-foreground">Escala</th>
-                    <th className="px-4 py-2 text-center font-semibold text-muted-foreground">{sortedMonths[0]}</th>
-                    <th className="px-4 py-2 text-center font-semibold text-muted-foreground">{sortedMonths[sortedMonths.length - 1]}</th>
-                    <th className="px-4 py-2 text-center font-semibold text-muted-foreground">Variação</th>
-                    <th className="px-4 py-2 text-center font-semibold text-muted-foreground">Tendência</th>
+                    <th className="px-3 sm:px-4 py-2 text-left font-semibold text-muted-foreground">Escala</th>
+                    <th className="px-3 sm:px-4 py-2 text-center font-semibold text-muted-foreground">{sortedMonths[0]}</th>
+                    <th className="px-3 sm:px-4 py-2 text-center font-semibold text-muted-foreground">{sortedMonths[sortedMonths.length - 1]}</th>
+                    <th className="px-3 sm:px-4 py-2 text-center font-semibold text-muted-foreground">Variação</th>
+                    <th className="px-3 sm:px-4 py-2 text-center font-semibold text-muted-foreground">Tendência</th>
                   </tr></thead>
                   <tbody>{deltas.map(d => (
                     <tr key={d.name} className="border-b border-border/50">
-                      <td className="px-4 py-2 font-medium text-foreground">{d.name}</td>
-                      <td className="px-4 py-2 text-center text-muted-foreground">{d.primeiro.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-center text-foreground font-medium">{d.último.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-3 sm:px-4 py-2 font-medium text-foreground">{d.name}</td>
+                      <td className="px-3 sm:px-4 py-2 text-center text-muted-foreground">{d.primeiro.toFixed(2)}</td>
+                      <td className="px-3 sm:px-4 py-2 text-center text-foreground font-medium">{d.último.toFixed(2)}</td>
+                      <td className="px-3 sm:px-4 py-2 text-center">
                         <span className={cn("font-bold", d.delta > 0 ? "text-success" : d.delta < 0 ? "text-destructive" : "text-muted-foreground")}>
                           {d.delta > 0 ? "+" : ""}{d.delta.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-center text-lg">
+                      <td className="px-3 sm:px-4 py-2 text-center text-lg">
                         {d.delta > 0.1 ? "📈" : d.delta < -0.1 ? "📉" : "➡️"}
                       </td>
                     </tr>
@@ -248,22 +231,19 @@ export default function TemporalEvolution() {
           </>
         )}
 
-        {/* All companies evolution - admin only */}
         {!isCompanyUser && allCompaniesEvolution.length > 1 && (
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">Evolução de Todas as Empresas</h3>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={allCompaniesEvolution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  {companies.map((c, i) => <Line key={c.id} type="monotone" dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 4 }} connectNulls />)}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={350}>
+              <LineChart data={allCompaniesEvolution}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="period" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={chart.tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                {companies.map((c, i) => <Line key={c.id} type="monotone" dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: chart.isMobile ? 2 : 4 }} connectNulls />)}
+              </LineChart>
+            </ResponsiveChart>
           </div>
         )}
       </div>

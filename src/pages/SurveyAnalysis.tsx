@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { QuestionChart } from "@/components/dashboard/QuestionChart";
 import { FormFilter } from "@/components/dashboard/FormFilter";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
 import { questions } from "@/data/mockData";
@@ -11,7 +12,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useSearchParams } from "react-router-dom";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer,
 } from "recharts";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)"];
@@ -20,6 +20,7 @@ export default function SurveyAnalysis() {
   const { isCompanyUser } = useAuth();
   const [activeSection, setActiveSection] = useState("contexto");
   const [searchParams, setSearchParams] = useSearchParams();
+  const chart = useChartConfig();
 
   const selectedCompany = searchParams.get("company") || "";
   const selectedFormId = searchParams.get("form") || "";
@@ -93,15 +94,15 @@ export default function SurveyAnalysis() {
       <ErrorBoundary>
         <div className="animate-fade-in space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Análise por Pergunta</h1>
-            <p className="text-sm text-muted-foreground mt-1">Visualize a distribuição de respostas para cada item</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Análise por Pergunta</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Visualize a distribuição de respostas para cada item</p>
           </div>
 
           <div className="flex flex-col sm:flex-row flex-wrap gap-3">
             <div className="flex flex-wrap gap-2">
               {availableSections.map((s) => (
                 <button key={s.id} onClick={() => setActiveSection(s.id)}
-                  className={cn("rounded-lg px-4 py-2 text-sm font-medium transition-all", activeSection === s.id ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}>
+                  className={cn("rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all", activeSection === s.id ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80")}>
                   {s.shortName}
                 </button>
               ))}
@@ -110,28 +111,20 @@ export default function SurveyAnalysis() {
             {!isCompanyUser && (
               <select
                 value={selectedCompany}
-                onChange={(e) => {
-                  updateParams({
-                    company: e.target.value,
-                    sector: "",
-                    form: ""
-                  });
-                }}
+                onChange={(e) => updateParams({ company: e.target.value, sector: "", form: "" })}
                 className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="">Todas as empresas</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-            )} {/* <--- THIS CLOSING BRACKET WAS MISSING */}
+            )}
 
-            {/* Filtro de Formulários (FormFilter) */}
             <FormFilter 
               forms={companyForms} 
               selectedFormId={selectedFormId} 
               onChange={(id) => updateParams({ form: id, sector: "" })} 
             />
 
-            {/* Filtro de Setores */}
             <select 
               value={sectorFilter} 
               onChange={(e) => updateParams({ sector: e.target.value })}
@@ -142,18 +135,16 @@ export default function SurveyAnalysis() {
             </select>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
             <h3 className="mb-3 text-sm font-semibold text-card-foreground">Radar Geral</h3>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
-                  <Radar dataKey="média" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={250}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius - 10}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
+                <Radar dataKey="média" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveChart>
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

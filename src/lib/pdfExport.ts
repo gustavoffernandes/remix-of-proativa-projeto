@@ -481,8 +481,11 @@ export function exportCompanyPDF(companyId: string, data: PDFExportData, formNam
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.text);
 
-  // Check if we have real action plans
-  const realPlans = (data.actionPlans || []).filter(p => p.company_config_id === companyId);
+  // Check if we have real action plans - match by companyId OR any form configId for this company
+  const realPlans = (data.actionPlans || []).filter(p =>
+    p.company_config_id === companyId ||
+    (data.companies.find(c => c.id === companyId) && data.getCompanyRespondents(companyId).some(r => (r as any).configId === p.company_config_id))
+  );
   const realTasks = data.actionTasks || [];
 
   if (realPlans.length > 0) {

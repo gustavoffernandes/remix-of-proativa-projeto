@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useActionPlans } from "@/hooks/useActionPlans";
+import { FormFilter } from "@/components/dashboard/FormFilter";
 import {
   PROART_SCALES, ALL_FACTORS, classifyRisk, getRiskLabel, getRiskColor, getRiskBgColor,
   calculatePxS, getPRLevelLabel, getPRLevelColor, getPRLevelBgColor,
@@ -18,6 +19,7 @@ export default function ActionPlans() {
   const { isLoading: loadingSurvey, hasData, companies, respondents, getCompanyRespondents, getAvailableSections, getFormConfigsForCompany } = useSurveyData();
   const { plans, tasks, isLoading: loadingPlans, createPlan, updatePlanStatus, deletePlan, createTask, updateTask, deleteTask } = useActionPlans();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [editingObs, setEditingObs] = useState<string | null>(null);
@@ -58,26 +60,22 @@ export default function ActionPlans() {
     return { factorResults, pxs };
   };
 
-  // Build per-form data
-  const formDataList = companyForms.map(form => {
-    const pool = allCompanyRespondents.filter(r => r.configId === form.configId);
-    const analysis = computeAnalysis(pool);
-    // Plans linked to this specific form configId
-    const formPlans = plans.filter(p => p.company_config_id === form.configId);
-    return { form, pool, ...analysis, formPlans };
-  });
+  // Determine which form to show
+  const activeFormId = selectedFormId || (companyForms.length > 0 ? companyForms[0].configId : "");
+  const activeForm = companyForms.find(f => f.configId === activeFormId);
 
-  // Plans linked to company key (legacy) that don't match any specific form
+  // Compute data for active form only
+  const activePool = activeFormId
+    ? allCompanyRespondents.filter(r => r.configId === activeFormId)
+    : allCompanyRespondents;
+  const activeAnalysis = computeAnalysis(activePool);
+  const activeFormPlans = plans.filter(p => p.company_config_id === activeFormId);
+
+  // Legacy plans
   const formConfigIds = new Set(companyForms.map(f => f.configId));
   const legacyPlans = plans.filter(p => p.company_config_id === effectiveCompany && !formConfigIds.has(p.company_config_id));
 
-  // If company has only 1 form, also include legacy plans
-  const allCompanyPlans = [
-    ...plans.filter(p => formConfigIds.has(p.company_config_id)),
-    ...legacyPlans,
-  ];
-
-  // Fallback: if no forms exist, compute analysis on all respondents
+  // Fallback: if no forms exist
   const fallbackAnalysis = companyForms.length === 0 ? computeAnalysis(allCompanyRespondents) : null;
   const fallbackPlans = companyForms.length === 0 ? plans.filter(p => p.company_config_id === effectiveCompany) : [];
 
@@ -154,7 +152,6 @@ export default function ActionPlans() {
 
         {isExpanded && (
           <div className="border-t border-border p-3 sm:p-4 space-y-3">
-            {/* Status controls */}
             {!readOnly ? (
               <div className="flex flex-wrap items-center gap-2">
                 {(["pending", "in_progress", "completed"] as const).map(s => (
@@ -174,10 +171,8 @@ export default function ActionPlans() {
               </div>
             )}
 
-            {/* Tasks table - responsive: cards on mobile, table on desktop */}
             {planTasks.length > 0 && (
               <>
-                {/* Desktop table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
@@ -226,7 +221,6 @@ export default function ActionPlans() {
                   </table>
                 </div>
 
-                {/* Mobile cards */}
                 <div className="md:hidden space-y-2">
                   {planTasks.map(task => (
                     <div key={task.id} className={cn("rounded-lg border p-3 space-y-2", task.is_completed ? "bg-success/5 border-success/20" : "bg-warning/5 border-warning/20")}>
@@ -271,7 +265,6 @@ export default function ActionPlans() {
               </>
             )}
 
-            {/* Editing observation inline */}
             {!readOnly && editingObs && planTasks.some(t => t.id === editingObs) && (
               <div className="mt-2 flex gap-2 px-1 sm:px-3">
                 <input value={obsText} onChange={e => setObsText(e.target.value)} placeholder="Como fazer (observação)..." className="flex-1 rounded border border-border bg-background px-2 py-1 text-xs" />
@@ -279,7 +272,6 @@ export default function ActionPlans() {
               </div>
             )}
 
-            {/* Add task */}
             {!readOnly && (
               <div className="flex gap-2">
                 <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="Nova tarefa..." className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs" onKeyDown={e => { if (e.key === "Enter" && newTaskTitle.trim()) { createTask({ action_plan_id: plan.id, title: newTaskTitle.trim() }); setNewTaskTitle(""); } }} />
@@ -300,7 +292,7 @@ export default function ActionPlans() {
     formPlans: typeof plans,
     respondentCount: number,
   ) => (
-    <div key={formConfigId} className="space-y-4 rounded-2xl border border-border bg-card/50 p-3 sm:p-5">
+    <div key={formConfigId} className="space-y-4">
       {/* Form header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -407,20 +399,23 @@ export default function ActionPlans() {
               {readOnly ? "Visualização dos planos de ação da sua empresa" : "Gestão de planos baseados no diagnóstico PROART — por formulário"}
             </p>
           </div>
-          {!isCompanyUser && (
-            <select value={effectiveCompany} onChange={e => setSelectedCompany(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {!isCompanyUser && (
+              <select value={effectiveCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedFormId(""); }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:w-auto">
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <FormFilter
+              forms={companyForms}
+              selectedFormId={selectedFormId}
+              onChange={setSelectedFormId}
+            />
+          </div>
         </div>
 
-        {/* Render per-form sections */}
-        {formDataList.length > 0 ? (
-          <div className="space-y-6">
-            {formDataList.map(({ form, pool, factorResults, pxs, formPlans }) =>
-              renderFormSection(form.title, form.configId, factorResults, pxs, formPlans, pool.length)
-            )}
-          </div>
+        {/* Render the active form section only */}
+        {companyForms.length > 0 && activeForm ? (
+          renderFormSection(activeForm.title, activeForm.configId, activeAnalysis.factorResults, activeAnalysis.pxs, activeFormPlans, activePool.length)
         ) : fallbackAnalysis ? (
           renderFormSection(company?.name || "Empresa", effectiveCompany, fallbackAnalysis.factorResults, fallbackAnalysis.pxs, fallbackPlans, allCompanyRespondents.length)
         ) : (

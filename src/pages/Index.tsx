@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useActionPlans } from "@/hooks/useActionPlans";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import {
   calculatePxS, getPRLevelLabel, getPRLevelColor, getPRLevelBgColor,
 } from "@/lib/proartMethodology";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   LineChart, Line,
 } from "recharts";
@@ -28,6 +29,7 @@ export default function Index() {
   const availableSections = getAvailableSections();
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const chart = useChartConfig();
 
   const isFullLoading = isLoading || loadingPlans;
 
@@ -49,7 +51,6 @@ export default function Index() {
     );
   }
 
-  // Filter respondents by date range
   const dateFiltered = respondents.filter(r => {
     if (!startDate && !endDate) return true;
     if (!r.responseTimestamp) return false;
@@ -79,15 +80,12 @@ export default function Index() {
     ...Object.fromEntries(companies.map((c) => [c.name.split(" ")[0], getSectionAverage(s.id, c.id)])),
   }));
 
-  // Evolution timeline - group responses by month
-  const timelineData: Record<string, { month: string; [key: string]: string | number }>  = {};
+  const timelineData: Record<string, { month: string; [key: string]: string | number }> = {};
   respondents.forEach(r => {
     if (!r.responseTimestamp) return;
     const d = new Date(r.responseTimestamp);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    if (!timelineData[key]) {
-      timelineData[key] = { month: key };
-    }
+    if (!timelineData[key]) timelineData[key] = { month: key };
   });
 
   const sortedMonths = Object.keys(timelineData).sort();
@@ -137,60 +135,52 @@ export default function Index() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">{isCompanyUser ? "Resultado por Pilar" : "Benchmark por Pilar"}</h3>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={benchmarkData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  {availableSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[4, 4, 0, 0]} />)}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={300}>
+              <BarChart data={benchmarkData} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={chart.tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                {availableSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[4, 4, 0, 0]} />)}
+              </BarChart>
+            </ResponsiveChart>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">Perfil Comparativo (Radar)</h3>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={100}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
-                  {companies.map((c, i) => <Radar key={c.id} name={c.name.split(" ")[0]} dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={300}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
+                {companies.map((c, i) => <Radar key={c.id} name={c.name.split(" ")[0]} dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
+                <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+              </RadarChart>
+            </ResponsiveChart>
           </div>
         </div>
 
-        {/* Evolution Timeline */}
         {evolutionData.length > 1 && (
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">Evolução Temporal</h3>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolutionData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  {companies.map((c, i) => <Line key={c.id} type="monotone" dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 4 }} connectNulls />)}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveChart height={300}>
+              <LineChart data={evolutionData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={chart.tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: chart.legendFontSize }} />
+                {companies.map((c, i) => <Line key={c.id} type="monotone" dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: chart.isMobile ? 2 : 4 }} connectNulls />)}
+              </LineChart>
+            </ResponsiveChart>
           </div>
         )}
 
-        {/* Ranking - hide for company_user since they only see 1 company */}
         {!isCompanyUser && (
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">Ranking de Empresas</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -219,13 +209,13 @@ export default function Index() {
           </div>
         )}
 
-        {/* Action Plan Progress */}
         {plans.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Execução dos Planos de Ação</h3>
             <div className="space-y-3">
               {companies.map(c => {
-                const cPlans = plans.filter(p => p.company_config_id === c.id);
+                const cConfigIds = new Set(respondents.filter(r => r.companyId === c.id).map(r => (r as any).configId).filter(Boolean));
+                const cPlans = plans.filter(p => p.company_config_id === c.id || cConfigIds.has(p.company_config_id));
                 if (cPlans.length === 0) return null;
                 const cTasks = tasks.filter(t => cPlans.some(p => p.id === t.action_plan_id));
                 const completedTasks = cTasks.filter(t => t.is_completed).length;

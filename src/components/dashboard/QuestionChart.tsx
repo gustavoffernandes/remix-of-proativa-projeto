@@ -7,6 +7,7 @@ import {
 import { BarChart3, PieChartIcon, TrendingUp, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { scaleLabels } from "@/data/mockData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ChartType = "bar" | "pie" | "line" | "radar";
 
@@ -36,6 +37,7 @@ import { getAnswerDistribution as mockGetAnswerDistribution } from "@/data/mockD
 
 export function QuestionChart({ questionId, questionText, companyId, getAnswerDistribution }: QuestionChartProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
+  const isMobile = useIsMobile();
   const distFn = getAnswerDistribution || mockGetAnswerDistribution;
   const dist = distFn(questionId, companyId);
   const data = dist.map((d) => ({
@@ -44,6 +46,7 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
     percentage: d.percentage,
     score: d.value,
   }));
+  const tickSize = isMobile ? 8 : 10;
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-card">
@@ -68,13 +71,13 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
         </div>
       </div>
 
-      <div className="h-[200px]">
+      <div className="h-[180px] sm:h-[200px] min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "bar" ? (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+               <XAxis dataKey="name" tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
+               <YAxis tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -82,7 +85,7 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
             </BarChart>
           ) : chartType === "pie" ? (
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" label={({ name, percentage }) => `${name}: ${percentage}%`}>
+              <Pie data={data} cx="50%" cy="50%" innerRadius={isMobile ? 30 : 40} outerRadius={isMobile ? 55 : 70} dataKey="value" label={isMobile ? false : ({ name, percentage }) => `${name}: ${percentage}%`}>
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
@@ -90,15 +93,15 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
           ) : chartType === "line" ? (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+               <XAxis dataKey="name" tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
+               <YAxis tick={{ fontSize: tickSize, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
               <Line type="monotone" dataKey="value" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           ) : (
-            <RadarChart data={data} cx="50%" cy="50%" outerRadius={65}>
+            <RadarChart data={data} cx="50%" cy="50%" outerRadius={isMobile ? 50 : 65}>
               <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+              <PolarAngleAxis dataKey="name" tick={{ fontSize: isMobile ? 7 : 9, fill: "hsl(var(--muted-foreground))" }} />
               <PolarRadiusAxis tick={{ fontSize: 8 }} />
               <Radar dataKey="value" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.2} strokeWidth={2} />
             </RadarChart>

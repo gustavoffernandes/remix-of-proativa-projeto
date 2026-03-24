@@ -13,6 +13,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 import { cn, uniqueSectors } from "@/lib/utils";
 
 const COLORS = ["hsl(217, 71%, 45%)", "hsl(170, 60%, 45%)", "hsl(38, 92%, 55%)", "hsl(280, 60%, 55%)", "hsl(0, 72%, 55%)", "hsl(200, 80%, 50%)"];
@@ -33,6 +34,7 @@ export default function CompanyComparison() {
   // Selected factors filter for "Por Fator" mode
   const [selectedFactors, setSelectedFactors] = useState<string[]>([]);
 
+  const chart = useChartConfig();
   const availableSections = getAvailableSections();
   const effectiveSelected = selected.length > 0 ? selected : companies.map(c => c.id);
   const toggle = (id: string) => { const current = effectiveSelected; setSelected(current.includes(id) ? current.filter(x => x !== id) : [...current, id]); };
@@ -190,13 +192,13 @@ export default function CompanyComparison() {
               })}
             </div>
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Comparação por Pilar</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} barCategoryGap="20%">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <XAxis dataKey="name" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                       <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -205,13 +207,13 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar Comparativo</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={100}>
+                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
                       <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
                       {selectedCompanies.map((c, i) => <Radar key={c.id} name={c.name.split(" ")[0]} dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
                       <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -219,9 +221,9 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Tendência por Pilar</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -234,12 +236,12 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-3 text-sm font-semibold text-card-foreground">Mesmo Setor entre Empresas</h3>
                 <select value={effectiveCrossSector} onChange={e => setCrossSector(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm mb-3 w-full">
                   {allSectors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={crossSectorData} barCategoryGap="20%">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -327,28 +329,28 @@ export default function CompanyComparison() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Comparação por Fator (10 Fatores PROART)</h3>
-                <div className="h-[400px]">
+                <div className="h-[300px] sm:h-[400px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={factorData} barCategoryGap="15%" layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis dataKey="name" type="category" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={100} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                      <XAxis type="number" domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: chart.isMobile ? 7 : 9, fill: "hsl(var(--muted-foreground))" }} width={chart.isMobile ? 60 : 100} />
+                      <Tooltip contentStyle={chart.tooltipStyle} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       {selectedCompanies.map((c, i) => <Bar key={c.id} dataKey={c.name.split(" ")[0]} fill={COLORS[i % COLORS.length]} radius={[0, 4, 4, 0]} />)}
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar por Fator</h3>
-                <div className="h-[400px]">
+                <div className="h-[300px] sm:h-[400px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={factorData} cx="50%" cy="50%" outerRadius={120}>
+                    <RadarChart data={factorData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius + 20}>
                       <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="name" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarAngleAxis dataKey="name" tick={{ fontSize: chart.isMobile ? 6 : 8, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
                       {selectedCompanies.map((c, i) => <Radar key={c.id} name={c.name.split(" ")[0]} dataKey={c.name.split(" ")[0]} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
                       <Legend wrapperStyle={{ fontSize: 10 }} />
@@ -433,9 +435,9 @@ export default function CompanyComparison() {
             )}
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Setores por Pilar</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={sectorChartData} barCategoryGap="15%">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -448,13 +450,13 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar por Setor</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={sectorChartData.map(d => ({ ...d, subject: d.name }))} cx="50%" cy="50%" outerRadius={100}>
+                    <RadarChart data={sectorChartData.map(d => ({ ...d, subject: d.name }))} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius}>
                       <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize, fill: "hsl(var(--muted-foreground))" }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 9 }} />
                       {sectorAvgs.map((sa, i) => <Radar key={sa.sector} name={sa.sector} dataKey={sa.sector.substring(0, 8)} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.1} strokeWidth={2} />)}
                       <Legend wrapperStyle={{ fontSize: 10 }} />

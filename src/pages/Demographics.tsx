@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { ResponsiveChart, useChartConfig } from "@/components/dashboard/ResponsiveChart";
 import { sections, questions } from "@/data/mockData";
 import { useSurveyData } from "@/hooks/useSurveyData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +9,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { cn, uniqueSectors } from "@/lib/utils";
@@ -31,6 +32,7 @@ export default function Demographics() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoading, hasData, companies, respondents, getAvailableSections } = useSurveyData();
   const availableSections = getAvailableSections();
+  const chart = useChartConfig();
 
   const companyFilter = searchParams.get("company") || "";
   const sectorFilter = searchParams.get("sector") || "";
@@ -121,51 +123,31 @@ export default function Demographics() {
       <ErrorBoundary>
         <div className="animate-fade-in space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Perfil Demográfico</h1>
-            <p className="text-sm text-muted-foreground mt-1">Cruzamento entre dados demográficos e percepção</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Perfil Demográfico</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Cruzamento entre dados demográficos e percepção</p>
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
-            {/* Filtro de Empresas (Apenas para não-usuários da empresa) */}
             {!isCompanyUser && (
               <select
                 value={companyFilter}
-                onChange={(e) => {
-                  updateParams({
-                    company: e.target.value,
-                    sector: ""
-                  });
-                }}
+                onChange={(e) => updateParams({ company: e.target.value, sector: "" })}
                 className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="">Todas as empresas</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             )}
-
-            {/* Filtro de Setores (Visível para todos) */}
-            <select 
-              value={sectorFilter} 
+            <select
+              value={sectorFilter}
               onChange={(e) => updateParams({ sector: e.target.value })}
               className="rounded-lg border border-border bg-card px-3 py-2 text-sm w-full sm:w-auto"
             >
               <option value="">Todos os setores</option>
-              {availableSectors.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              {availableSectors.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-
-            {/* Filtro de Data (Visível para todos) */}
-            <DateRangeFilter 
-              startDate={startDate} 
-              endDate={endDate} 
-              onStartChange={setStartDate} 
-              onEndChange={setEndDate} 
-            />
+            <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
           </div>
 
-          {/* Section checkboxes */}
           <div className="flex flex-wrap gap-2">
             <span className="text-xs font-medium text-muted-foreground self-center mr-1">Pilares:</span>
             {availableSections.map(s => {
@@ -188,76 +170,66 @@ export default function Demographics() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Distribuição por Gênero</h3>
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart><Pie data={sexData} cx="50%" cy="50%" outerRadius={90} dataKey="count" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-                    {sexData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                  </Pie><Tooltip /></PieChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={260}>
+                <PieChart><Pie data={sexData} cx="50%" cy="50%" outerRadius={chart.isMobile ? 65 : 90} dataKey="count" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} labelLine={!chart.isMobile}>
+                  {sexData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                </Pie><Tooltip /></PieChart>
+              </ResponsiveChart>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Radar Demográfico por Gênero</h3>
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
-                    <Radar dataKey="Geral" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.1} strokeWidth={2} />
-                    {sexGroups.map((sg, i) => (
-                      <Radar key={sg} dataKey={sg.substring(0, 4)} stroke={COLORS[(i + 1) % COLORS.length]} fill={COLORS[(i + 1) % COLORS.length]} fillOpacity={0.05} strokeWidth={1.5} />
-                    ))}
-                    <Legend wrapperStyle={{ fontSize: 10 }} />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={260}>
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={chart.radarOuterRadius - 10}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: chart.radarAngleFontSize - 1, fill: "hsl(var(--muted-foreground))" }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 8 }} />
+                  <Radar dataKey="Geral" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.1} strokeWidth={2} />
+                  {sexGroups.map((sg, i) => (
+                    <Radar key={sg} dataKey={sg.substring(0, 4)} stroke={COLORS[(i + 1) % COLORS.length]} fill={COLORS[(i + 1) % COLORS.length]} fillOpacity={0.05} strokeWidth={1.5} />
+                  ))}
+                  <Legend wrapperStyle={{ fontSize: chart.legendFontSize - 1 }} />
+                </RadarChart>
+              </ResponsiveChart>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Gênero × Percepção por Pilar</h3>
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sexPerception} barCategoryGap="20%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 10 }} />
-                    {effectiveSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[3, 3, 0, 0]} />)}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={260}>
+                <BarChart data={sexPerception} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip contentStyle={chart.tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: chart.legendFontSize - 1 }} />
+                  {effectiveSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[3, 3, 0, 0]} />)}
+                </BarChart>
+              </ResponsiveChart>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Faixa Etária × Percepção</h3>
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ageData} barCategoryGap="15%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 10 }} />
-                    {effectiveSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[3, 3, 0, 0]} />)}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={260}>
+                <BarChart data={ageData} barCategoryGap="15%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip contentStyle={chart.tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: chart.legendFontSize - 1 }} />
+                  {effectiveSections.map((s, i) => <Bar key={s.id} dataKey={s.shortName} fill={COLORS[i]} radius={[3, 3, 0, 0]} />)}
+                </BarChart>
+              </ResponsiveChart>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-card-foreground">Setor × Média ({effectiveSections.find(s => s.id === sectorSectionId)?.shortName || sectorSectionId})</h3>
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sectorData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" domain={[0, 5]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Bar dataKey="média" fill={COLORS[0]} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveChart height={260}>
+                <BarChart data={sectorData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" domain={[0, 5]} tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: chart.tickFontSize, fill: "hsl(var(--muted-foreground))" }} width={chart.isMobile ? 60 : 80} />
+                  <Tooltip contentStyle={chart.tooltipStyle} />
+                  <Bar dataKey="média" fill={COLORS[0]} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveChart>
             </div>
           </div>
         </div>
