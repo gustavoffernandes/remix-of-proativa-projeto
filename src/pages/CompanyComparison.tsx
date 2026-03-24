@@ -221,9 +221,9 @@ export default function CompanyComparison() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-card min-w-0">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">Tendência por Pilar</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px] min-w-0 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
