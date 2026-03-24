@@ -71,7 +71,7 @@ export function QuestionChart({ questionId, questionText, companyId, getAnswerDi
         </div>
       </div>
 
-      <div className="h-[200px]">
+      <div className="h-[180px] sm:h-[200px] min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "bar" ? (
             <BarChart data={data}>
