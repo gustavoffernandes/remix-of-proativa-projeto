@@ -1,1 +1,12 @@
 project_id = "kxjelbnrewahpupdubpd"
+
+[auth]
+# Desabilita confirmação obrigatória por email para que o usuário possa
+# seguir direto para o checkout após cadastro.
+enable_signup = true
+enable_confirmations = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = true

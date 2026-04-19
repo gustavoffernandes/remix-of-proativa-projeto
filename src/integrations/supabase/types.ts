@@ -166,6 +166,36 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       google_forms_config: {
         Row: {
           address_city: string | null
@@ -262,6 +292,48 @@ export type Database = {
           start_date?: string | null
           survey_password?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          last_payment_at: string | null
+          last_payment_id: string | null
+          phone: string | null
+          plan_cycle: string | null
+          plan_id: string | null
+          plan_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          last_payment_at?: string | null
+          last_payment_id?: string | null
+          phone?: string | null
+          plan_cycle?: string | null
+          plan_id?: string | null
+          plan_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          last_payment_at?: string | null
+          last_payment_id?: string | null
+          phone?: string | null
+          plan_cycle?: string | null
+          plan_id?: string | null
+          plan_status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
