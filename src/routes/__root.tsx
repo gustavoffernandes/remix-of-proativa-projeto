@@ -39,6 +39,8 @@ export const Route = createRootRoute({
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "proativa" },
       { name: "twitter:description", content: "Proativa helps businesses achieve NR-01 compliance for psychosocial risks with automated reporting." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fd338176-5f94-4013-a537-851b0621a5ba/id-preview-ca737492--601fa7a1-04c5-4be3-9dd5-902f8ad25256.lovable.app-1776628319887.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fd338176-5f94-4013-a537-851b0621a5ba/id-preview-ca737492--601fa7a1-04c5-4be3-9dd5-902f8ad25256.lovable.app-1776628319887.png" },
     ],
     links: [
       {
