@@ -559,18 +559,21 @@ export type Database = {
         Row: {
           company_id: string | null
           id: string
+          plan_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           company_id?: string | null
           id?: string
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           company_id?: string | null
           id?: string
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -580,6 +583,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "google_forms_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
