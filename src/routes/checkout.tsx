@@ -1,14 +1,16 @@
 // ============================================================================
-// Página de Checkout — /checkout?plan=professional&cycle=annual
+// /checkout — Resumo do plano + criação da preferência Mercado Pago
 // ----------------------------------------------------------------------------
-// Mostra resumo do plano selecionado e botão que dispara a criação da
-// preferência no Mercado Pago, redirecionando para o Checkout Pro.
+// Exige usuário autenticado. Salva o plano no profile ANTES do redirect e
+// dispara o Checkout Pro do MP.
 // ============================================================================
 
-import { useState } from "react";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { ArrowLeft, ShieldCheck, Loader2, CreditCard } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { ArrowLeft, ShieldCheck, Loader2, CreditCard, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { getPlan, formatBRL, type BillingCycle, type PlanId } from "@/lib/plans";
 
 type Search = {
@@ -33,9 +35,21 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { plan: planId, cycle } = useSearch({ from: "/checkout" });
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const plan = getPlan(planId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Exige autenticação — redireciona pro login preservando o plano escolhido
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate({
+        to: "/login",
+        search: { redirect: "/checkout", plan: planId, cycle } as never,
+      });
+    }
+  }, [user, authLoading, planId, cycle]);
 
   if (!plan) {
     return (
@@ -50,13 +64,26 @@ function CheckoutPage() {
     );
   }
 
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   const price = cycle === "annual" ? plan.price.annual : plan.price.monthly;
 
   async function handleCheckout() {
     setLoading(true);
     setError(null);
     try {
-      // Importação dinâmica evita carregar a server fn no bundle inicial
+      // Salva intenção de plano no profile (status pending até confirmação)
+      await supabase
+        .from("profiles")
+        .update({ plan_id: planId, plan_cycle: cycle, plan_status: "pending" })
+        .eq("user_id", user!.id);
+
       const { createMercadoPagoCheckout } = await import("@/lib/mercado-pago");
       const data = await createMercadoPagoCheckout({
         data: { planId: planId!, cycle: cycle!, origin: window.location.origin },
@@ -74,13 +101,13 @@ function CheckoutPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-16 flex items-center">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Link>
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <UserIcon className="h-3.5 w-3.5" /> {user.email}
+          </span>
         </div>
       </header>
 
@@ -124,20 +151,11 @@ function CheckoutPage() {
             </div>
           )}
 
-          <Button
-            onClick={handleCheckout}
-            disabled={loading}
-            size="lg"
-            className="mt-8 w-full"
-          >
+          <Button onClick={handleCheckout} disabled={loading} size="lg" className="mt-8 w-full">
             {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Redirecionando…
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Redirecionando…</>
             ) : (
-              <>
-                <CreditCard className="h-4 w-4" /> Pagar com Mercado Pago
-              </>
+              <><CreditCard className="h-4 w-4" /> Pagar com Mercado Pago</>
             )}
           </Button>
 

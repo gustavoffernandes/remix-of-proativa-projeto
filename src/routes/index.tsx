@@ -7,6 +7,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { SocialProof } from "@/components/SocialProof";
 import { Pricing } from "@/components/Pricing";
 import { FAQ } from "@/components/FAQ";
+import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/")({
@@ -132,6 +133,7 @@ function Index() {
         <Pricing />
         <SocialProof />
         <FAQ />
+        <Contact />
       </main>
       <Footer />
     </div>

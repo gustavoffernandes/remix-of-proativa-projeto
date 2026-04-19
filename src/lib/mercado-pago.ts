@@ -75,9 +75,9 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
       },
       statement_descriptor: "PROATIVA",
       back_urls: {
-        success: `${data.origin}/checkout/sucesso?plan=${plan.id}`,
-        failure: `${data.origin}/checkout/erro?plan=${plan.id}`,
-        pending: `${data.origin}/checkout/pendente?plan=${plan.id}`,
+        success: `${data.origin}/pagamento-aprovado?plan=${plan.id}&cycle=${data.cycle}`,
+        failure: `${data.origin}/pagamento-recusado?plan=${plan.id}&cycle=${data.cycle}`,
+        pending: `${data.origin}/pagamento-pendente?plan=${plan.id}&cycle=${data.cycle}`,
       },
       auto_return: "approved",
       // notification_url: `${data.origin}/api/mercado-pago-webhook`, // (futuro)
