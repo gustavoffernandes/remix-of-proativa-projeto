@@ -515,6 +515,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      grant_admin_after_payment: { Args: never; Returns: boolean }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
     }
     Enums: {

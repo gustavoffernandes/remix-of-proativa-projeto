@@ -64,19 +64,28 @@ function ApprovedPage() {
       navigate({ to: "/" });
       return;
     }
-    // Atualiza profile com plano
+    // Atualiza profile com plano e concede acesso de admin à dashboard
     if (user && savedPlan && savedCycle) {
-      supabase
-        .from("profiles")
-        .update({
-          plan_id: savedPlan,
-          plan_cycle: savedCycle,
-          plan_status: "active",
-          last_payment_id: search.payment_id ?? null,
-          last_payment_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .then(() => setUpdating(false));
+      (async () => {
+        await supabase
+          .from("profiles")
+          .update({
+            plan_id: savedPlan,
+            plan_cycle: savedCycle,
+            plan_status: "active",
+            last_payment_id: search.payment_id ?? null,
+            last_payment_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id);
+
+        // Após o profile ficar com plan_status='active', a função SECURITY DEFINER
+        // valida no servidor e concede o role 'admin' (acesso à dashboard).
+        const { error: rpcError } = await supabase.rpc("grant_admin_after_payment");
+        if (rpcError) {
+          console.error("Falha ao conceder acesso à dashboard:", rpcError);
+        }
+        setUpdating(false);
+      })();
     } else {
       // Tenta ler do profile (caso usuário recarregue sem params)
       if (user) {
