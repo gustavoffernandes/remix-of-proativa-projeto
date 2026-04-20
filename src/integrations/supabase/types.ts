@@ -295,6 +295,42 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_verifications: {
+        Row: {
+          amount: number | null
+          id: string
+          payment_id: string
+          plan_cycle: string
+          plan_id: string
+          raw: Json | null
+          status: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          amount?: number | null
+          id?: string
+          payment_id: string
+          plan_cycle: string
+          plan_id: string
+          raw?: Json | null
+          status: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          amount?: number | null
+          id?: string
+          payment_id?: string
+          plan_cycle?: string
+          plan_id?: string
+          raw?: Json | null
+          status?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -471,6 +507,13 @@ export type Database = {
             referencedRelation: "google_forms_config"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "survey_responses_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "public_form_configs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       survey_sessions: {
@@ -515,6 +558,13 @@ export type Database = {
             referencedRelation: "google_forms_config"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "survey_sessions_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "public_form_configs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sync_logs: {
@@ -553,6 +603,13 @@ export type Database = {
             referencedRelation: "google_forms_config"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sync_logs_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "public_form_configs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -586,6 +643,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "public_form_configs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_roles_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -596,11 +660,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_form_configs: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          form_status: string | null
+          form_title: string | null
+          form_url: string | null
+          id: string | null
+          instructions: string | null
+          is_active: boolean | null
+          is_anonymous: boolean | null
+          require_consent: boolean | null
+          require_password: boolean | null
+          sector: string | null
+          sectors: Json | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          form_status?: string | null
+          form_title?: string | null
+          form_url?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_active?: boolean | null
+          is_anonymous?: boolean | null
+          require_consent?: boolean | null
+          require_password?: boolean | null
+          sector?: string | null
+          sectors?: Json | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          form_status?: string | null
+          form_title?: string | null
+          form_url?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_active?: boolean | null
+          is_anonymous?: boolean | null
+          require_consent?: boolean | null
+          require_password?: boolean | null
+          sector?: string | null
+          sectors?: Json | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       grant_admin_after_payment: { Args: never; Returns: boolean }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      verify_survey_password: {
+        Args: { _config_id: string; _password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "company_user"
