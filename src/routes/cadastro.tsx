@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<null | { needsConfirmation: boolean; email: string }>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -68,7 +69,7 @@ function SignupPage() {
     }
     setErrors({});
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -81,7 +82,10 @@ function SignupPage() {
       setServerError(error.message.includes("already") ? "Esse e-mail já está cadastrado." : error.message);
       return;
     }
-    // O listener do useAuth fará o redirect.
+    // Conta criada. Se a confirmação de e-mail estiver ativa, não há sessão ainda.
+    const hasSession = Boolean(data?.session);
+    setSuccess({ needsConfirmation: !hasSession, email: parsed.data.email });
+    // Se já houver sessão, o listener do useAuth fará o redirect.
   }
 
   return (
