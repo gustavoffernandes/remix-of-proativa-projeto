@@ -64,25 +64,27 @@ function ApprovedPage() {
       navigate({ to: "/" });
       return;
     }
-    // Atualiza profile com plano e concede acesso de admin à dashboard
+    // ⚠️ A ativação do plano é feita SOMENTE pelo servidor (webhook do MP que
+    // grava em payment_verifications). O cliente apenas tenta chamar o RPC
+    // que valida server-side e, se houver pagamento verificado, concede o
+    // role 'admin'. Pode ser que o webhook ainda não tenha chegado quando o
+    // usuário é redirecionado — nesse caso, fazemos polling com retry.
     if (user && savedPlan && savedCycle) {
       (async () => {
-        await supabase
-          .from("profiles")
-          .update({
-            plan_id: savedPlan,
-            plan_cycle: savedCycle,
-            plan_status: "active",
-            last_payment_id: search.payment_id ?? null,
-            last_payment_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
-
-        // Após o profile ficar com plan_status='active', a função SECURITY DEFINER
-        // valida no servidor e concede o role 'admin' (acesso à dashboard).
-        const { error: rpcError } = await supabase.rpc("grant_admin_after_payment");
-        if (rpcError) {
-          console.error("Falha ao conceder acesso à dashboard:", rpcError);
+        let granted = false;
+        for (let attempt = 0; attempt < 6; attempt++) {
+          const { error: rpcError } = await supabase.rpc("grant_admin_after_payment");
+          if (!rpcError) {
+            granted = true;
+            break;
+          }
+          // Aguarda 2s e tenta de novo (webhook do MP pode demorar a chegar).
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        if (!granted) {
+          console.warn(
+            "Pagamento ainda não confirmado pelo servidor. O acesso será liberado assim que o webhook do Mercado Pago for processado.",
+          );
         }
         setUpdating(false);
       })();

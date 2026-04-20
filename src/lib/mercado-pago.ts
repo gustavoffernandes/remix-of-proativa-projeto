@@ -24,18 +24,20 @@ export interface CheckoutInput {
   cycle: BillingCycle;
   /** Origin do site, enviado pelo cliente para montar back_urls absolutas. */
   origin: string;
+  /** ID do usuário autenticado — incluído na metadata para o webhook do MP. */
+  userId: string;
 }
 
 export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
   .inputValidator((input: unknown): CheckoutInput => {
     const i = input as Partial<CheckoutInput> | null;
-    if (!i?.planId || !i?.cycle || !i?.origin) {
-      throw new Error("planId, cycle e origin são obrigatórios.");
+    if (!i?.planId || !i?.cycle || !i?.origin || !i?.userId) {
+      throw new Error("planId, cycle, origin e userId são obrigatórios.");
     }
     if (i.cycle !== "monthly" && i.cycle !== "annual") {
       throw new Error("cycle deve ser 'monthly' ou 'annual'.");
     }
-    return { planId: i.planId, cycle: i.cycle, origin: i.origin };
+    return { planId: i.planId, cycle: i.cycle, origin: i.origin, userId: i.userId };
   })
   .handler(async ({ data }) => {
     const plan = getPlan(data.planId);
@@ -53,6 +55,13 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     const unitPrice =
       data.cycle === "annual" ? plan.price.annual : plan.price.monthly;
 
+    // URL pública do webhook do Mercado Pago (edge function Supabase).
+    const supabaseUrl =
+      process.env.SUPABASE_URL ??
+      process.env.VITE_SUPABASE_URL ??
+      "https://kxjelbnrewahpupdubpd.supabase.co";
+    const notificationUrl = `${supabaseUrl}/functions/v1/mercado-pago-webhook`;
+
     // 🔧 Personalize aqui os DADOS DO RECEBEDOR / METADADOS exibidos no checkout.
     const preference = {
       items: [
@@ -68,11 +77,14 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
           category_id: "services",
         },
       ],
+      // ⚠️ Metadados são lidos pelo webhook para vincular o pagamento ao usuário.
       metadata: {
         plan_id: plan.id,
         cycle: data.cycle,
         product: "proativa",
+        user_id: data.userId,
       },
+      external_reference: `${data.userId}:${plan.id}:${data.cycle}`,
       statement_descriptor: "PROATIVA",
       back_urls: {
         success: `${data.origin}/pagamento-aprovado?plan=${plan.id}&cycle=${data.cycle}`,
@@ -80,7 +92,7 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
         pending: `${data.origin}/pagamento-pendente?plan=${plan.id}&cycle=${data.cycle}`,
       },
       auto_return: "approved",
-      // notification_url: `${data.origin}/api/mercado-pago-webhook`, // (futuro)
+      notification_url: notificationUrl,
     };
 
     const res = await fetch(MP_API, {

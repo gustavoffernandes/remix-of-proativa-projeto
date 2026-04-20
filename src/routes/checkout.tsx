@@ -78,15 +78,17 @@ function CheckoutPage() {
     setLoading(true);
     setError(null);
     try {
-      // Salva intenção de plano no profile (status pending até confirmação)
-      await supabase
-        .from("profiles")
-        .update({ plan_id: planId, plan_cycle: cycle, plan_status: "pending" })
-        .eq("user_id", user!.id);
-
+      // ⚠️ A intenção de plano é registrada no Mercado Pago via metadata e o
+      // webhook server-side é a única fonte de verdade para ativar o plano.
+      // O cliente NÃO altera plan_status/plan_id no profile diretamente.
       const { createMercadoPagoCheckout } = await import("@/lib/mercado-pago");
       const data = await createMercadoPagoCheckout({
-        data: { planId: planId!, cycle: cycle!, origin: window.location.origin },
+        data: {
+          planId: planId!,
+          cycle: cycle!,
+          origin: window.location.origin,
+          userId: user!.id,
+        },
       });
       if (!data?.init_point) {
         throw new Error("Não foi possível iniciar o pagamento.");
