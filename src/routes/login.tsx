@@ -3,7 +3,7 @@
 // ============================================================================
 import { useState, useEffect } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,14 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     setSubmitting(false);
     if (error) {
-      setServerError(error.message.includes("Invalid") ? "E-mail ou senha incorretos." : error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid") || msg.includes("credentials")) {
+        setServerError("E-mail ou senha incorretos. Verifique seus dados e tente novamente.");
+      } else if (msg.includes("not confirmed") || msg.includes("confirm")) {
+        setServerError("Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.");
+      } else {
+        setServerError(error.message);
+      }
     }
   }
 
@@ -92,23 +99,27 @@ function LoginPage() {
             {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
           </div>
           <div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
-              <Link to="/esqueci-senha" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4">
-                Esqueci a senha
-              </Link>
-            </div>
+            <Label htmlFor="password">Senha</Label>
             <Input id="password" type="password" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-1.5" />
             {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password}</p>}
           </div>
 
           {serverError && (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">{serverError}</div>
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{serverError}</span>
+            </div>
           )}
 
           <Button type="submit" size="lg" className="w-full" disabled={submitting}>
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Entrando…</> : "Entrar"}
           </Button>
+
+          <div className="text-center">
+            <Link to="/esqueci-senha" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4">
+              Esqueci a senha
+            </Link>
+          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             Não tem conta?{" "}
