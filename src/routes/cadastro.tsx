@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<null | { needsConfirmation: boolean; email: string }>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -68,7 +69,7 @@ function SignupPage() {
     }
     setErrors({});
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -81,7 +82,10 @@ function SignupPage() {
       setServerError(error.message.includes("already") ? "Esse e-mail já está cadastrado." : error.message);
       return;
     }
-    // O listener do useAuth fará o redirect.
+    // Conta criada. Se a confirmação de e-mail estiver ativa, não há sessão ainda.
+    const hasSession = Boolean(data?.session);
+    setSuccess({ needsConfirmation: !hasSession, email: parsed.data.email });
+    // Se já houver sessão, o listener do useAuth fará o redirect.
   }
 
   return (
@@ -104,6 +108,27 @@ function SignupPage() {
           </p>
         </div>
 
+        {success ? (
+          <div className="mt-8 rounded-2xl border border-success/40 bg-success/10 p-6 sm:p-8 shadow-[var(--shadow-soft)] text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/20 text-success">
+              <CheckCircle2 className="h-8 w-8" strokeWidth={2} />
+            </div>
+            <h2 className="font-display text-2xl text-foreground">Conta criada com sucesso!</h2>
+            {success.needsConfirmation ? (
+              <p className="text-sm text-muted-foreground">
+                Enviamos um link de confirmação para <strong className="text-foreground">{success.email}</strong>.
+                Verifique sua caixa de entrada (e a pasta de spam) para ativar a conta antes de entrar.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Sua conta já está ativa. Você será redirecionado em instantes…
+              </p>
+            )}
+            <Button asChild size="lg" className="w-full">
+              <Link to="/login" search={search as never}>Ir para o login</Link>
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={onSubmit} className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-[var(--shadow-soft)] space-y-4">
           <div>
             <Label htmlFor="full_name">Nome completo</Label>
@@ -145,6 +170,7 @@ function SignupPage() {
             </Link>
           </p>
         </form>
+        )}
       </main>
     </div>
   );
