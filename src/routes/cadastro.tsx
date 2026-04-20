@@ -108,6 +108,27 @@ function SignupPage() {
           </p>
         </div>
 
+        {success ? (
+          <div className="mt-8 rounded-2xl border border-success/40 bg-success/10 p-6 sm:p-8 shadow-[var(--shadow-soft)] text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/20 text-success">
+              <CheckCircle2 className="h-8 w-8" strokeWidth={2} />
+            </div>
+            <h2 className="font-display text-2xl text-foreground">Conta criada com sucesso!</h2>
+            {success.needsConfirmation ? (
+              <p className="text-sm text-muted-foreground">
+                Enviamos um link de confirmação para <strong className="text-foreground">{success.email}</strong>.
+                Verifique sua caixa de entrada (e a pasta de spam) para ativar a conta antes de entrar.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Sua conta já está ativa. Você será redirecionado em instantes…
+              </p>
+            )}
+            <Button asChild size="lg" className="w-full">
+              <Link to="/login" search={search as never}>Ir para o login</Link>
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={onSubmit} className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-[var(--shadow-soft)] space-y-4">
           <div>
             <Label htmlFor="full_name">Nome completo</Label>
@@ -149,6 +170,7 @@ function SignupPage() {
             </Link>
           </p>
         </form>
+        )}
       </main>
     </div>
   );
