@@ -27,7 +27,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "starter",
     name: "Starter",
     description: "Pequenas empresas e consultores independentes.",
-    price: { monthly: 2, annual: 2 },
+    price: { monthly: 1, annual: 1 },
   },
   professional: {
     id: "professional",
