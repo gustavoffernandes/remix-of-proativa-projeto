@@ -722,6 +722,16 @@ export type Database = {
       }
     }
     Functions: {
+      apply_payment_status: {
+        Args: {
+          _payment_id: string
+          _plan_cycle: string
+          _plan_id: string
+          _status: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       grant_admin_after_payment: { Args: never; Returns: boolean }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       verify_survey_password: {
