@@ -10,3 +10,7 @@ enable_confirmations = false
 enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
+
+# Mercado Pago webhook precisa ser público (chamado pelo MP, sem JWT do usuário).
+[functions.mercado-pago-webhook]
+verify_jwt = false
