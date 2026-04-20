@@ -84,7 +84,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { error } = await supabase
+    // 1) Registra o pagamento verificado (auditoria/histórico)
+    const { error: upsertErr } = await supabase
       .from("payment_verifications")
       .upsert(
         {
@@ -99,10 +100,31 @@ Deno.serve(async (req) => {
         { onConflict: "payment_id" },
       );
 
-    if (error) {
-      console.error("DB upsert error", error);
-      return json({ error: error.message }, 500);
+    if (upsertErr) {
+      console.error("DB upsert error", upsertErr);
+      // Mesmo com erro de upsert, retornamos 200 para o MP não ficar reenviando.
+      // O erro já está logado para investigação.
+      return json({ ok: true, warn: "upsert_failed" });
     }
+
+    // 2) Aplica o status no profile/user_roles (ativa, pendente, rejeita ou estorna)
+    const { error: applyErr } = await supabase.rpc("apply_payment_status", {
+      _user_id: userId,
+      _plan_id: planId,
+      _plan_cycle: cycle,
+      _payment_id: payment.id.toString(),
+      _status: payment.status,
+    });
+
+    if (applyErr) {
+      console.error("apply_payment_status error", applyErr);
+      // 200 mesmo assim — MP não deve reenviar; logamos para debug manual.
+      return json({ ok: true, warn: "apply_failed", detail: applyErr.message });
+    }
+
+    console.log(
+      `[webhook] payment ${payment.id} status=${payment.status} applied for user=${userId}`,
+    );
 
     return json({ ok: true, status: payment.status });
   } catch (e) {
